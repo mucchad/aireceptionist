@@ -74,19 +74,22 @@ export async function POST(request: Request) {
     if (leadCaptured && leadData && !conversation.lead_id) {
       const supabase = getSupabase()
 
-      supabase
-        .from('leads')
-        .insert({
-          account_id: account.id,
-          customer_name: leadData.name,
-          customer_phone: from,
-          job_description: leadData.job,
-          channel: 'sms',
-          status: 'new',
-        })
-        .select()
-        .single()
-        .then(async ({ data: lead }) => {
+      // Fire and forget — don't await so we respond to Twilio immediately
+      void (async () => {
+        try {
+          const { data: lead } = await supabase
+            .from('leads')
+            .insert({
+              account_id: account.id,
+              customer_name: leadData.name,
+              customer_phone: from,
+              job_description: leadData.job,
+              channel: 'sms',
+              status: 'new',
+            })
+            .select()
+            .single()
+
           if (!lead) return
 
           await linkConversationToLead(conversation.id, lead.id)
@@ -102,8 +105,10 @@ export async function POST(request: Request) {
               await sendSms(contact.phone, to, notificationText)
             }
           }
-        })
-        .catch((err) => console.error('Lead capture error:', err))
+        } catch (err) {
+          console.error('Lead capture error:', err)
+        }
+      })()
     }
 
     // 5. Reply to the customer immediately
