@@ -1,0 +1,120 @@
+@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Design Tokens — AI Switchboard · Direction C · Warm & Approachable
+   ============================================================ */
+:root {
+  /* Surfaces */
+  --color-bg:             #f7f0e6;
+  --color-surface:        #fffdf9;
+  --color-surface-sunken: #f4ecdd;
+  --color-row-hover:      #faf4ea;
+
+  /* Borders */
+  --color-border:         #e9ddc9;
+  --color-border-soft:    #f0e7d8;
+
+  /* Text */
+  --color-text:           #2c2620;
+  --color-text-secondary: #5a5247;
+  --color-text-muted:     #938876;
+
+  /* Brand accent — terracotta */
+  --color-accent:         #c8633f;
+  --color-accent-hover:   #b6502d;
+  --color-accent-text:    #b6502d;
+  --color-accent-weak:    #f6e3da;
+  --color-on-accent:      #ffffff;
+  --color-accent-2:       #d9954a;
+
+  /* Status — Live (green) */
+  --color-live:           #3f8f6b;
+  --color-live-weak:      #e4f0e8;
+  --color-live-ring:      rgba(63, 143, 107, 0.45);
+
+  /* Status — POC / amber */
+  --color-amber:          #c0852a;
+  --color-amber-weak:     #f7ecd6;
+
+  /* Shape */
+  --radius-card:          18px;
+  --radius-control:       12px;
+  --radius-pill:          999px;
+  --radius-logo:          9px;
+
+  /* Elevation */
+  --shadow-card:          0 2px 14px rgba(120, 90, 50, 0.06);
+  --shadow-accent:        0 4px 14px rgba(200, 99, 63, 0.28);
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 400;
+  margin: 0;
+  padding: 0;
+}
+
+/* ============================================================
+   Live pill pulse animation
+   ============================================================ */
+.live-dot {
+  box-shadow: 0 0 0 0 var(--color-live-ring);
+  animation: pulse-ring 1.8s infinite;
+}
+
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 var(--color-live-ring); }
+  70%  { box-shadow: 0 0 0 7px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .live-dot {
+    animation: none;
+  }
+}
+
+/* ============================================================
+   Lead row entrance animation
+   ============================================================ */
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.lead-row-enter {
+  animation: slide-in 0.25s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lead-row-enter {
+    animation: none;
+  }
+}

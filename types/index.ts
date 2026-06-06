@@ -3,59 +3,71 @@
 // ============================================================
 
 // ------------------------------------------------------------
-// Business (Tenant)
+// Account (one per business you onboard)
 // ------------------------------------------------------------
-export type BusinessStatus = 'poc' | 'live' | 'cancelled'
-
+export type AccountStatus = 'poc' | 'live' | 'cancelled'
 export type EmergencyProtocol = 'capture-and-notify' | 'direct-number' | 'immediate-sms'
 
-export interface Business {
+export interface Account {
   id: string
   name: string
   type: string                    // e.g. "plumbing", "HVAC", "fence installation"
-  status: BusinessStatus
-  twilio_phone_number: string
+  status: AccountStatus
+  twilio_phone_number?: string
   dashboard_token: string         // secret token for their private dashboard URL
   persona_name: string            // defaults to "Alex"
   emergency_protocol: EmergencyProtocol
   emergency_contact?: string      // phone number for direct-number protocol
-  knowledge_base: string          // compiled text fed into the system prompt
+  knowledge_base?: string         // compiled text fed into the system prompt
   notify_sms: boolean
-  notify_email: boolean
-  owner_name: string
-  owner_phone: string
-  owner_email: string
   created_at: string
   updated_at: string
 }
 
 // ------------------------------------------------------------
-// Knowledge Base Sources (inputs for building the knowledge base)
+// Contact (people at an account — owner, manager, staff)
 // ------------------------------------------------------------
+export type ContactRole = 'owner' | 'manager' | 'staff'
+
+export interface Contact {
+  id: string
+  account_id: string
+  name: string
+  role: ContactRole
+  phone?: string
+  email?: string
+  is_primary: boolean             // primary contact receives SMS notifications
+  created_at: string
+}
+
+// ------------------------------------------------------------
+// Knowledge Base Source (inputs for building the knowledge base)
+// ------------------------------------------------------------
+export type KnowledgeBaseSourceType = 'website' | 'google_maps' | 'facebook' | 'yelp' | 'manual'
+
 export interface KnowledgeBaseSource {
   id: string
-  business_id: string
-  type: 'website' | 'google_maps' | 'facebook' | 'yelp' | 'manual'
-  url?: string                    // for scraped sources
+  account_id: string
+  type: KnowledgeBaseSourceType
+  url?: string                    // null for manual entries
   content: string                 // scraped or manually entered text
   created_at: string
 }
 
 // ------------------------------------------------------------
-// Lead (captured from a call or SMS)
+// Lead (every customer who contacts an account through Alex)
 // ------------------------------------------------------------
 export type LeadChannel = 'call' | 'sms'
 export type LeadStatus = 'new' | 'contacted' | 'resolved'
 
 export interface Lead {
   id: string
-  business_id: string
+  account_id: string
   customer_name?: string
   customer_phone: string
   job_description?: string
   channel: LeadChannel
   status: LeadStatus
-  conversation_id?: string        // links to full conversation transcript
   created_at: string
 }
 
@@ -72,7 +84,7 @@ export interface ConversationMessage {
 
 export interface Conversation {
   id: string
-  business_id: string
+  account_id: string
   lead_id?: string
   channel: LeadChannel
   customer_phone: string
