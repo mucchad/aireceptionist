@@ -1,21 +1,34 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { StatCard } from '@/components/ui/stat-card'
 import { AccountsTable } from '@/components/dashboard/accounts-table'
+import type { Account } from '@/types'
 
 type Filter = 'all' | 'live' | 'poc'
-
-const TABS: { key: Filter; label: string; count: number }[] = [
-  { key: 'all', label: 'All', count: 3 },
-  { key: 'live', label: 'Live', count: 2 },
-  { key: 'poc', label: 'POC', count: 1 },
-]
 
 export default function AdminPage() {
   const router = useRouter()
   const [activeFilter, setActiveFilter] = useState<Filter>('all')
+  const [accounts, setAccounts] = useState<Account[]>([])
+
+  useEffect(() => {
+    fetch('/api/accounts')
+      .then((r) => r.json())
+      .then((d) => setAccounts(d.accounts ?? []))
+      .catch(() => {})
+  }, [])
+
+  const total = accounts.length
+  const live  = accounts.filter((a) => a.status === 'live').length
+  const poc   = accounts.filter((a) => a.status === 'poc').length
+
+  const TABS: { key: Filter; label: string; count: number }[] = [
+    { key: 'all',  label: 'All',  count: total },
+    { key: 'live', label: 'Live', count: live },
+    { key: 'poc',  label: 'POC',  count: poc },
+  ]
 
   return (
     <div style={{ padding: '26px 28px 28px' }}>
@@ -95,10 +108,10 @@ export default function AdminPage() {
           marginBottom: 18,
         }}
       >
-        <StatCard label="Total accounts" value="3" />
-        <StatCard label="Live" value="2" delta="● active" deltaPositive />
-        <StatCard label="In POC" value="1" />
-        <StatCard label="Leads this week" value="12" delta="+18%" deltaPositive />
+        <StatCard label="Total accounts" value={String(total)} />
+        <StatCard label="Live" value={String(live)} delta={live > 0 ? '● active' : undefined} deltaPositive />
+        <StatCard label="In POC" value={String(poc)} />
+        <StatCard label="Leads this week" value="—" />
       </div>
 
       {/* Filter tabs */}
@@ -136,7 +149,6 @@ export default function AdminPage() {
               }}
             >
               {tab.label}
-              {/* Count chip */}
               <span
                 style={{
                   fontSize: 11,
