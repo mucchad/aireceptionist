@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { StatCard } from '@/components/ui/stat-card'
 import { AccountsTable } from '@/components/dashboard/accounts-table'
 
@@ -13,6 +14,7 @@ const TABS: { key: Filter; label: string; count: number }[] = [
 ]
 
 export default function AdminPage() {
+  const router = useRouter()
   const [activeFilter, setActiveFilter] = useState<Filter>('all')
 
   return (
@@ -77,6 +79,7 @@ export default function AdminPage() {
           onMouseLeave={(e) => {
             e.currentTarget.style.backgroundColor = 'var(--color-accent)'
           }}
+          onClick={() => router.push('/accounts/new')}
         >
           <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
           New account
