@@ -1,0 +1,49 @@
+// API route: GET /api/dashboard/[token]
+// Looks up an account by its secret dashboard token and returns its leads + stats
+
+import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+import { getLeads, getLeadCounts } from '@/lib/db/leads'
+
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) throw new Error('Missing Supabase environment variables')
+  return createClient(url, key)
+}
+
+export async function GET(
+  _request: Request,
+  { params }: { params: { token: string } }
+) {
+  try {
+    const { token } = params
+
+    // Look up the account by its secret dashboard token
+    const supabase = getSupabase()
+    const { data: account, error } = await supabase
+      .from('accounts')
+      .select('id, name, status')
+      .eq('dashboard_token', token)
+      .single()
+
+    if (error || !account) {
+      return NextResponse.json({ error: 'Dashboard not found' }, { status: 404 })
+    }
+
+    // Fetch leads and counts for this account
+    const [leads, counts] = await Promise.all([
+      getLeads(account.id),
+      getLeadCounts(account.id),
+    ])
+
+    return NextResponse.json({
+      accountName: account.name,
+      leads,
+      counts,
+    })
+  } catch (error) {
+    console.error('Dashboard load error:', error)
+    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
+  }
+}
