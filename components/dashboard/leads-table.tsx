@@ -3,9 +3,108 @@
 // Leads table — shown on the owner dashboard
 // Displays each lead with customer info, job description, channel, time, and status
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Avatar } from '@/components/ui/avatar'
 import type { Lead, LeadStatus } from '@/types'
+
+const SWIPE_THRESHOLD = 0.38 // 38% of row width triggers confirm
+
+function SwipeableLeadRow({
+  canSwipe,
+  onContacted,
+  children,
+  style,
+  className,
+}: {
+  canSwipe: boolean
+  onContacted: () => void
+  children: React.ReactNode
+  style?: React.CSSProperties
+  className?: string
+}) {
+  const [offset, setOffset] = useState(0)
+  const [confirming, setConfirming] = useState(false) // snapping to full swipe
+  const [dismissed, setDismissed] = useState(false)   // collapsing out
+  const startX = useRef(0)
+  const rowRef = useRef<HTMLDivElement>(null)
+
+  function handleTouchStart(e: React.TouchEvent) {
+    if (!canSwipe) return
+    startX.current = e.touches[0].clientX
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    if (!canSwipe) return
+    const dx = startX.current - e.touches[0].clientX
+    if (dx > 0) setOffset(Math.min(dx, window.innerWidth * 0.7))
+  }
+
+  function handleTouchEnd() {
+    if (!canSwipe) return
+    const width = rowRef.current?.offsetWidth ?? window.innerWidth
+    if (offset >= width * SWIPE_THRESHOLD) {
+      // Confirmed — snap out then collapse
+      setConfirming(true)
+      setOffset(width)
+      setTimeout(() => {
+        setDismissed(true)
+        onContacted()
+      }, 260)
+    } else {
+      // Snap back
+      setOffset(0)
+    }
+  }
+
+  if (dismissed) return null
+
+  return (
+    <div
+      ref={rowRef}
+      style={{ position: 'relative', overflow: 'hidden', ...style }}
+      className={className}
+    >
+      {/* Green action background */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundColor: 'var(--color-live)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+          paddingRight: 24,
+          opacity: canSwipe ? Math.min(offset / 80, 1) : 0,
+        }}
+      >
+        <span style={{
+          fontFamily: "'Hanken Grotesk', sans-serif",
+          fontSize: 13,
+          fontWeight: 700,
+          color: '#ffffff',
+          letterSpacing: '0.02em',
+        }}>
+          ✓ Contacted
+        </span>
+      </div>
+
+      {/* Row content — slides left */}
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          transform: `translateX(-${offset}px)`,
+          transition: confirming || offset === 0 ? 'transform 0.25s ease' : 'none',
+          backgroundColor: 'var(--color-surface)',
+          willChange: 'transform',
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
 
 const STATUS_CYCLE: Record<LeadStatus, LeadStatus | null> = {
   new: 'contacted',
@@ -140,6 +239,14 @@ interface LeadsTableProps {
   filter: 'all' | LeadStatus
 }
 
+async function markContacted(leadId: string) {
+  await fetch('/api/leads', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lead_id: leadId, status: 'contacted' }),
+  })
+}
+
 export function LeadsTable({ leads, filter }: LeadsTableProps) {
   const filtered = leads.filter((l) => filter === 'all' || l.status === filter)
 
@@ -194,13 +301,18 @@ export function LeadsTable({ leads, filter }: LeadsTableProps) {
 
       {/* Rows */}
       {filtered.map((lead, index) => (
-        <div
+        <SwipeableLeadRow
           key={lead.id}
-          className="lead-row-enter leads-table-row"
+          canSwipe={lead.status === 'new'}
+          onContacted={() => markContacted(lead.id)}
+          className="lead-row-enter"
           style={{
             borderBottom:
               index < filtered.length - 1 ? '1px solid var(--color-border-soft)' : 'none',
           }}
+        >
+        <div
+          className="leads-table-row"
         >
           {/* Customer: avatar + name + phone */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -287,6 +399,7 @@ export function LeadsTable({ leads, filter }: LeadsTableProps) {
             </span>
           </div>
         </div>
+        </SwipeableLeadRow>
       ))}
     </div>
   )
