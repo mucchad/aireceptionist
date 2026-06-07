@@ -10,17 +10,15 @@ interface Source {
 }
 
 interface FormData {
-  // Step 1
   name: string
   type: string
   persona_name: string
-  // Step 2
+  twilio_phone_number: string
   website_url: string
   google_maps_url: string
   facebook_url: string
   yelp_url: string
   manual_content: string
-  // Step 3
   contact_name: string
   contact_phone: string
   contact_email: string
@@ -53,6 +51,7 @@ const INITIAL_FORM: FormData = {
   name: '',
   type: '',
   persona_name: 'Alex',
+  twilio_phone_number: '',
   website_url: '',
   google_maps_url: '',
   facebook_url: '',
@@ -63,7 +62,6 @@ const INITIAL_FORM: FormData = {
   contact_email: '',
 }
 
-// Reusable input style
 const inputStyle: React.CSSProperties = {
   width: '100%',
   height: 40,
@@ -75,6 +73,7 @@ const inputStyle: React.CSSProperties = {
   fontSize: 14,
   color: 'var(--color-text)',
   outline: 'none',
+  boxSizing: 'border-box',
 }
 
 const labelStyle: React.CSSProperties = {
@@ -93,19 +92,7 @@ const hintStyle: React.CSSProperties = {
   marginTop: 4,
 }
 
-function FieldGroup({ children }: { children: React.ReactNode }) {
-  return <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>{children}</div>
-}
-
-function Field({
-  label,
-  hint,
-  children,
-}: {
-  label: string
-  hint?: string
-  children: React.ReactNode
-}) {
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div>
       <label style={labelStyle}>{label}</label>
@@ -115,69 +102,29 @@ function Field({
   )
 }
 
-function StepIndicator({ current, total }: { current: number; total: number }) {
+function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 28 }}>
-      {Array.from({ length: total }, (_, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: 'var(--radius-pill)',
-              backgroundColor:
-                i + 1 === current
-                  ? 'var(--color-accent)'
-                  : i + 1 < current
-                  ? 'var(--color-live)'
-                  : 'var(--color-surface-sunken)',
-              color:
-                i + 1 <= current ? 'var(--color-on-accent)' : 'var(--color-text-muted)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontFamily: "'Hanken Grotesk', sans-serif",
-              fontSize: 12,
-              fontWeight: 700,
-            }}
-          >
-            {i + 1 < current ? '✓' : i + 1}
-          </div>
-          {i < total - 1 && (
-            <div
-              style={{
-                width: 32,
-                height: 1,
-                backgroundColor:
-                  i + 1 < current ? 'var(--color-live)' : 'var(--color-border)',
-              }}
-            />
-          )}
-        </div>
-      ))}
-      <span
+    <div style={{ marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid var(--color-border)' }}>
+      <h2
         style={{
-          fontFamily: "'Hanken Grotesk', sans-serif",
-          fontSize: 13,
-          color: 'var(--color-text-muted)',
-          marginLeft: 8,
+          fontFamily: "'Bricolage Grotesque', sans-serif",
+          fontSize: 17,
+          fontWeight: 700,
+          color: 'var(--color-text)',
+          margin: '0 0 3px',
         }}
       >
-        Step {current} of {total}
-      </span>
+        {title}
+      </h2>
+      <p style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: 13, color: 'var(--color-text-muted)', margin: 0 }}>
+        {subtitle}
+      </p>
     </div>
   )
 }
 
-const STEP_TITLES = [
-  { title: 'Business basics', subtitle: 'Tell us about this client' },
-  { title: 'Knowledge base', subtitle: 'Where should Alex learn about this business?' },
-  { title: 'Primary contact', subtitle: 'Who gets notified when a new lead comes in?' },
-]
-
 export default function NewAccountPage() {
   const router = useRouter()
-  const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormData>(INITIAL_FORM)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -186,48 +133,26 @@ export default function NewAccountPage() {
 
   function update(field: keyof FormData, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
-  }
-
-  function validateStep(s: number): string {
-    if (s === 1) {
-      if (!form.name.trim()) return 'Account name is required'
-      if (!form.type.trim()) return 'Business type is required'
-    }
-    if (s === 2) {
-      const hasSources =
-        form.website_url.trim() ||
-        form.google_maps_url.trim() ||
-        form.facebook_url.trim() ||
-        form.yelp_url.trim() ||
-        form.manual_content.trim()
-      if (!hasSources) return 'Add at least one knowledge base source'
-    }
-    if (s === 3) {
-      if (!form.contact_name.trim()) return 'Contact name is required'
-      if (!form.contact_phone.trim()) return 'Contact phone is required for SMS notifications'
-    }
-    return ''
-  }
-
-  function next() {
-    const err = validateStep(step)
-    if (err) { setError(err); return }
     setError('')
-    setStep((s) => s + 1)
-  }
-
-  function back() {
-    setError('')
-    setStep((s) => s - 1)
   }
 
   async function submit() {
-    const err = validateStep(3)
-    if (err) { setError(err); return }
+    if (!form.name.trim()) { setError('Account name is required'); return }
+    if (!form.type.trim()) { setError('Business type is required'); return }
+    if (!form.contact_name.trim()) { setError('Contact name is required'); return }
+    if (!form.contact_phone.trim()) { setError('Contact phone is required'); return }
+
+    const hasSources =
+      form.website_url.trim() ||
+      form.google_maps_url.trim() ||
+      form.facebook_url.trim() ||
+      form.yelp_url.trim() ||
+      form.manual_content.trim()
+    if (!hasSources) { setError('Add at least one knowledge base source'); return }
+
     setError('')
     setLoading(true)
 
-    // Build sources array from filled-in fields
     const sources: Source[] = []
     if (form.website_url.trim())
       sources.push({ type: 'website', url: form.website_url.trim(), content: form.website_url.trim() })
@@ -248,6 +173,7 @@ export default function NewAccountPage() {
           name: form.name,
           type: form.type,
           persona_name: form.persona_name,
+          twilio_phone_number: form.twilio_phone_number || undefined,
           emergency_protocol: 'capture-and-notify',
           sources,
           contact_name: form.contact_name,
@@ -293,7 +219,6 @@ export default function NewAccountPage() {
             textAlign: 'center',
           }}
         >
-          {/* Success icon */}
           <div
             style={{
               width: 56,
@@ -333,7 +258,6 @@ export default function NewAccountPage() {
             Share this private link with the business owner so they can see their leads.
           </p>
 
-          {/* Dashboard link */}
           <div
             style={{
               backgroundColor: 'var(--color-surface-sunken)',
@@ -351,7 +275,6 @@ export default function NewAccountPage() {
             {dashboardUrl}
           </div>
 
-          {/* Copy button */}
           <button
             onClick={copyDashboardLink}
             style={{
@@ -373,7 +296,6 @@ export default function NewAccountPage() {
             {copied ? '✓ Copied!' : 'Copy dashboard link'}
           </button>
 
-          {/* Back to accounts */}
           <button
             onClick={() => router.push('/')}
             style={{
@@ -398,9 +320,8 @@ export default function NewAccountPage() {
 
   // ── Form ────────────────────────────────────────────────────
   return (
-    <div style={{ padding: '26px 28px 28px' }}>
-
-      {/* Page header */}
+    <div style={{ padding: '26px 28px 60px' }}>
+      {/* Back + header */}
       <div style={{ marginBottom: 28 }}>
         <button
           onClick={() => router.push('/')}
@@ -429,21 +350,13 @@ export default function NewAccountPage() {
             margin: '0 0 4px',
           }}
         >
-          {STEP_TITLES[step - 1].title}
+          Add account
         </h1>
-        <p
-          style={{
-            fontFamily: "'Hanken Grotesk', sans-serif",
-            fontSize: 14,
-            color: 'var(--color-text-muted)',
-            margin: 0,
-          }}
-        >
-          {STEP_TITLES[step - 1].subtitle}
+        <p style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: 14, color: 'var(--color-text-muted)', margin: 0 }}>
+          Set up a new business on AI Switchboard
         </p>
       </div>
 
-      {/* Card */}
       <div
         style={{
           backgroundColor: 'var(--color-surface)',
@@ -451,62 +364,97 @@ export default function NewAccountPage() {
           borderRadius: 'var(--radius-card)',
           boxShadow: 'var(--shadow-card)',
           padding: '28px 32px',
-          maxWidth: 560,
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '32px 48px',
         }}
       >
-        <StepIndicator current={step} total={3} />
+        {/* ── Left column: Business basics + Primary contact ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
 
-        {/* ── Step 1: Business basics ── */}
-        {step === 1 && (
-          <FieldGroup>
-            <Field label="Account name *">
+          <div>
+            <SectionHeader title="Business basics" subtitle="Core details about this client" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <Field label="Account name *">
+                <input
+                  style={inputStyle}
+                  placeholder="e.g. Riverside Fence Co"
+                  value={form.name}
+                  onChange={(e) => update('name', e.target.value)}
+                />
+              </Field>
+
+              <Field label="Business type *">
+                <input
+                  style={inputStyle}
+                  placeholder="e.g. Fence installation, Plumbing, HVAC"
+                  value={form.type}
+                  onChange={(e) => update('type', e.target.value)}
+                />
+              </Field>
+
+              <Field label="AI persona name" hint="The name Alex uses when answering calls and texts">
+                <input
+                  style={inputStyle}
+                  placeholder="Alex"
+                  value={form.persona_name}
+                  onChange={(e) => update('persona_name', e.target.value)}
+                />
+              </Field>
+            </div>
+          </div>
+
+          <div>
+            <SectionHeader title="Primary contact" subtitle="Who gets notified when a new lead comes in" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <Field label="Contact name *">
+                <input
+                  style={inputStyle}
+                  placeholder="e.g. Mike Johnson"
+                  value={form.contact_name}
+                  onChange={(e) => update('contact_name', e.target.value)}
+                />
+              </Field>
+
+              <Field label="Mobile phone *" hint="Gets a text every time Alex captures a new lead">
+                <input
+                  style={inputStyle}
+                  placeholder="+1 (555) 000-0000"
+                  value={form.contact_phone}
+                  onChange={(e) => update('contact_phone', e.target.value)}
+                />
+              </Field>
+
+              <Field label="Email address" hint="Optional — for future email notifications">
+                <input
+                  style={inputStyle}
+                  type="email"
+                  placeholder="mike@example.com"
+                  value={form.contact_email}
+                  onChange={(e) => update('contact_email', e.target.value)}
+                />
+              </Field>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Right column: Phone + Knowledge base ── */}
+        <div>
+          {/* Twilio phone number */}
+          <div style={{ marginBottom: 28, paddingBottom: 28, borderBottom: '1px solid var(--color-border)' }}>
+            <SectionHeader title="Twilio Phone Number" subtitle="The Twilio number assigned to this account" />
+            <Field label="Twilio number" hint="Format: +14085551234 — buy the number in Twilio, paste it here">
               <input
                 style={inputStyle}
-                placeholder="e.g. Riverside Fence Co"
-                value={form.name}
-                onChange={(e) => update('name', e.target.value)}
+                placeholder="+1 (408) 555-1234"
+                value={form.twilio_phone_number}
+                onChange={(e) => update('twilio_phone_number', e.target.value)}
               />
             </Field>
+          </div>
 
-            <Field label="Business type *">
-              <input
-                style={inputStyle}
-                placeholder="e.g. Fence installation, Plumbing, HVAC"
-                value={form.type}
-                onChange={(e) => update('type', e.target.value)}
-              />
-            </Field>
-
-            <Field
-              label="AI persona name"
-              hint="This is the name Alex will use when answering calls and texts"
-            >
-              <input
-                style={inputStyle}
-                placeholder="Alex"
-                value={form.persona_name}
-                onChange={(e) => update('persona_name', e.target.value)}
-              />
-            </Field>
-
-          </FieldGroup>
-        )}
-
-        {/* ── Step 2: Knowledge base ── */}
-        {step === 2 && (
-          <FieldGroup>
-            <p
-              style={{
-                fontFamily: "'Hanken Grotesk', sans-serif",
-                fontSize: 13,
-                color: 'var(--color-text-muted)',
-                margin: '0 0 4px',
-                lineHeight: 1.5,
-              }}
-            >
-              Add at least one source. Alex will use all of them to answer customer questions accurately.
-            </p>
-
+          <SectionHeader title="Knowledge base" subtitle="What Alex knows about this business" />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <Field label="Website URL" hint="We'll pull services, hours, and FAQs automatically">
               <input
                 style={inputStyle}
@@ -543,14 +491,11 @@ export default function NewAccountPage() {
               />
             </Field>
 
-            <Field
-              label="Manual write-up"
-              hint="No website? Paste anything useful — services, prices, hours, FAQs"
-            >
+            <Field label="Manual write-up" hint="Fill in what Alex should know about this business">
               <textarea
                 style={{
                   ...inputStyle,
-                  height: 280,
+                  height: 340,
                   padding: '10px 14px',
                   resize: 'vertical',
                   lineHeight: 1.6,
@@ -561,50 +506,14 @@ export default function NewAccountPage() {
                 onChange={(e) => update('manual_content', e.target.value)}
               />
             </Field>
-          </FieldGroup>
-        )}
+          </div>
+        </div>
 
-        {/* ── Step 3: Primary contact ── */}
-        {step === 3 && (
-          <FieldGroup>
-            <Field label="Contact name *">
-              <input
-                style={inputStyle}
-                placeholder="e.g. Mike Johnson"
-                value={form.contact_name}
-                onChange={(e) => update('contact_name', e.target.value)}
-              />
-            </Field>
-
-            <Field
-              label="Mobile phone *"
-              hint="This number gets a text message every time Alex captures a new lead"
-            >
-              <input
-                style={inputStyle}
-                placeholder="+1 (555) 000-0000"
-                value={form.contact_phone}
-                onChange={(e) => update('contact_phone', e.target.value)}
-              />
-            </Field>
-
-            <Field label="Email address" hint="Optional — for future email notifications">
-              <input
-                style={inputStyle}
-                type="email"
-                placeholder="mike@example.com"
-                value={form.contact_email}
-                onChange={(e) => update('contact_email', e.target.value)}
-              />
-            </Field>
-          </FieldGroup>
-        )}
-
-        {/* Error message */}
+        {/* Error — spans both columns */}
         {error && (
           <div
             style={{
-              marginTop: 20,
+              gridColumn: '1 / -1',
               padding: '10px 14px',
               borderRadius: 'var(--radius-control)',
               backgroundColor: 'var(--color-accent-weak)',
@@ -618,77 +527,46 @@ export default function NewAccountPage() {
           </div>
         )}
 
-        {/* Navigation buttons */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            marginTop: 28,
-            gap: 12,
-          }}
-        >
-          {step > 1 ? (
-            <button
-              onClick={back}
-              style={{
-                height: 38,
-                padding: '0 20px',
-                borderRadius: 'var(--radius-control)',
-                backgroundColor: 'transparent',
-                color: 'var(--color-text)',
-                border: '1px solid var(--color-border)',
-                fontFamily: "'Hanken Grotesk', sans-serif",
-                fontSize: 13.5,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Back
-            </button>
-          ) : (
-            <div />
-          )}
+        {/* Submit button — spans both columns */}
+        <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 12, alignItems: 'center' }}>
+          <button
+            onClick={submit}
+            disabled={loading}
+            style={{
+              height: 42,
+              padding: '0 28px',
+              borderRadius: 'var(--radius-control)',
+              backgroundColor: loading ? 'var(--color-text-muted)' : 'var(--color-accent)',
+              color: 'var(--color-on-accent)',
+              boxShadow: loading ? 'none' : 'var(--shadow-accent)',
+              border: 'none',
+              fontFamily: "'Hanken Grotesk', sans-serif",
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              transition: 'background-color 0.15s ease',
+            }}
+          >
+            {loading ? 'Creating account…' : 'Create account'}
+          </button>
 
-          {step < 3 ? (
-            <button
-              onClick={next}
-              style={{
-                height: 38,
-                padding: '0 24px',
-                borderRadius: 'var(--radius-control)',
-                backgroundColor: 'var(--color-accent)',
-                color: 'var(--color-on-accent)',
-                boxShadow: 'var(--shadow-accent)',
-                border: 'none',
-                fontFamily: "'Hanken Grotesk', sans-serif",
-                fontSize: 13.5,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Continue →
-            </button>
-          ) : (
-            <button
-              onClick={submit}
-              disabled={loading}
-              style={{
-                height: 38,
-                padding: '0 24px',
-                borderRadius: 'var(--radius-control)',
-                backgroundColor: loading ? 'var(--color-text-muted)' : 'var(--color-accent)',
-                color: 'var(--color-on-accent)',
-                boxShadow: loading ? 'none' : 'var(--shadow-accent)',
-                border: 'none',
-                fontFamily: "'Hanken Grotesk', sans-serif",
-                fontSize: 13.5,
-                fontWeight: 600,
-                cursor: loading ? 'not-allowed' : 'pointer',
-              }}
-            >
-              {loading ? 'Creating account…' : 'Create account'}
-            </button>
-          )}
+          <button
+            onClick={() => router.push('/')}
+            style={{
+              height: 42,
+              padding: '0 20px',
+              borderRadius: 'var(--radius-control)',
+              backgroundColor: 'transparent',
+              color: 'var(--color-text)',
+              border: '1px solid var(--color-border)',
+              fontFamily: "'Hanken Grotesk', sans-serif",
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Cancel
+          </button>
         </div>
       </div>
     </div>
