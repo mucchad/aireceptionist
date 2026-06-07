@@ -285,13 +285,12 @@ export default function EditAccountPage() {
           borderRadius: 'var(--radius-card)',
           boxShadow: 'var(--shadow-card)',
           padding: '28px 32px',
-          maxWidth: 600,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 32,
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '32px 48px',
         }}
       >
-        {/* ── Section 1: Business basics ── */}
+        {/* ── Section 1: Business basics — left column ── */}
         <div>
           <SectionHeader title="Business basics" subtitle="Core details about this client" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -370,7 +369,7 @@ export default function EditAccountPage() {
           </div>
         </div>
 
-        {/* ── Section 2: Knowledge base ── */}
+        {/* ── Section 2: Knowledge base — right column ── */}
         <div>
           <SectionHeader title="Knowledge base" subtitle="What Alex knows about this business" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -427,10 +426,10 @@ export default function EditAccountPage() {
           </div>
         </div>
 
-        {/* ── Section 3: Primary contact ── */}
-        <div>
+        {/* ── Section 3: Primary contact — spans both columns ── */}
+        <div style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--color-border)', paddingTop: 28 }}>
           <SectionHeader title="Primary contact" subtitle="Who gets notified when a new lead comes in" />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
             <Field label="Contact name *">
               <input
                 style={inputStyle}
@@ -458,10 +457,11 @@ export default function EditAccountPage() {
           </div>
         </div>
 
-        {/* Error */}
+        {/* Error — spans both columns */}
         {error && (
           <div
             style={{
+              gridColumn: '1 / -1',
               padding: '10px 14px',
               borderRadius: 'var(--radius-control)',
               backgroundColor: 'var(--color-accent-weak)',
@@ -475,8 +475,8 @@ export default function EditAccountPage() {
           </div>
         )}
 
-        {/* Save button */}
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        {/* Save button — spans both columns */}
+        <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 12, alignItems: 'center' }}>
           <button
             onClick={save}
             disabled={saving}
