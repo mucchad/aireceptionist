@@ -1,6 +1,8 @@
 // API route: GET /api/accounts
 // Returns all accounts for the admin list
 
+export const dynamic = 'force-dynamic'
+
 import { NextResponse } from 'next/server'
 import { getAccounts } from '@/lib/db/accounts'
 

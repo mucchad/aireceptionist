@@ -1,5 +1,8 @@
 // API route: GET /api/dashboard/[token]
 // Looks up an account by its secret dashboard token and returns its leads + stats
+// force-dynamic disables Next.js response caching so leads always reflect live DB data
+
+export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
