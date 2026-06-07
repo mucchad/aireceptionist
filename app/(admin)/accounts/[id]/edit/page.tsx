@@ -113,8 +113,6 @@ export default function EditAccountPage() {
     name: '',
     type: '',
     persona_name: 'Alex',
-    emergency_protocol: 'capture-and-notify',
-    emergency_contact: '',
     website_url: '',
     google_maps_url: '',
     facebook_url: '',
