@@ -3,7 +3,7 @@
 // Leads table — shown on the owner dashboard
 // Displays each lead with customer info, job description, channel, time, and status
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Avatar } from '@/components/ui/avatar'
 import type { Lead, LeadStatus } from '@/types'
 
@@ -22,87 +22,82 @@ function SwipeableLeadRow({
   style?: React.CSSProperties
   className?: string
 }) {
-  const [offset, setOffset] = useState(0)
-  const [animating, setAnimating] = useState(false)
   const [dismissed, setDismissed] = useState(false)
-  const startX = useRef(0)
-  const startY = useRef(0)
-  const tracking = useRef(false)
-  const rowWidth = useRef(0)
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const slideRef = useRef<HTMLDivElement>(null)
+  const bgRef = useRef<HTMLDivElement>(null)
+  const cbRef = useRef(onContacted)
+  useEffect(() => { cbRef.current = onContacted }, [onContacted])
+
+  useEffect(() => {
+    const wrap = wrapRef.current
+    const slide = slideRef.current
+    const bg = bgRef.current
+    if (!wrap || !slide || !bg) return
+
+    let x0 = 0, y0 = 0, dx = 0
+    let decided = false, isH = false
+
+    function start(e: TouchEvent) {
+      x0 = e.touches[0].clientX
+      y0 = e.touches[0].clientY
+      dx = 0; decided = false; isH = false
+      slide.style.transition = 'none'
+    }
+
+    function move(e: TouchEvent) {
+      const x = e.touches[0].clientX
+      const y = e.touches[0].clientY
+      if (!decided) {
+        if (Math.abs(x - x0) < 3 && Math.abs(y - y0) < 3) return
+        isH = Math.abs(x - x0) > Math.abs(y - y0)
+        decided = true
+      }
+      if (!isH) return
+      e.preventDefault()
+      dx = Math.max(0, x0 - x)
+      slide.style.transform = `translateX(-${dx}px)`
+      bg.style.opacity = String(Math.min(dx / 80, 1))
+    }
+
+    function end() {
+      if (!isH) return
+      const w = wrap.offsetWidth || 320
+      if (dx >= w * SWIPE_THRESHOLD) {
+        slide.style.transition = 'transform 0.22s ease'
+        slide.style.transform = `translateX(-${w}px)`
+        setTimeout(() => { setDismissed(true); cbRef.current() }, 230)
+      } else {
+        slide.style.transition = 'transform 0.25s ease'
+        slide.style.transform = 'translateX(0)'
+        bg.style.opacity = '0'
+      }
+    }
+
+    wrap.addEventListener('touchstart', start, { passive: true })
+    wrap.addEventListener('touchmove', move, { passive: false })
+    wrap.addEventListener('touchend', end, { passive: true })
+    return () => {
+      wrap.removeEventListener('touchstart', start)
+      wrap.removeEventListener('touchmove', move)
+      wrap.removeEventListener('touchend', end)
+    }
+  }, [])
 
   if (dismissed) return null
 
-  function onTouchStart(e: React.TouchEvent) {
-    if (!canSwipe) return
-    startX.current = e.touches[0].clientX
-    startY.current = e.touches[0].clientY
-    rowWidth.current = (e.currentTarget as HTMLElement).offsetWidth
-    tracking.current = true
-  }
-
-  function onTouchMove(e: React.TouchEvent) {
-    if (!canSwipe || !tracking.current) return
-    const dx = startX.current - e.touches[0].clientX
-    if (dx <= 0) return
-    setOffset(dx)
-    setAnimating(false)
-  }
-
-  function onTouchEnd() {
-    if (!canSwipe || !tracking.current) return
-    tracking.current = false
-    const threshold = (rowWidth.current || 300) * SWIPE_THRESHOLD
-    if (offset >= threshold) {
-      setAnimating(true)
-      setOffset(rowWidth.current || 400)
-      setTimeout(() => {
-        setDismissed(true)
-        onContacted()
-      }, 250)
-    } else {
-      setAnimating(true)
-      setOffset(0)
-    }
-  }
-
   return (
-    <div
-      style={{ position: 'relative', overflow: 'hidden', ...style }}
-      className={className}
-    >
-      {/* Green action background */}
-      <div style={{
-        position: 'absolute',
-        inset: 0,
+    <div ref={wrapRef} style={{ position: 'relative', overflow: 'hidden', ...style }} className={className}>
+      <div ref={bgRef} style={{
+        position: 'absolute', inset: 0, opacity: 0,
         backgroundColor: 'var(--color-live)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        paddingRight: 24,
-        opacity: Math.min(offset / 80, 1),
+        display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 24,
       }}>
-        <span style={{
-          fontFamily: "'Hanken Grotesk', sans-serif",
-          fontSize: 14,
-          fontWeight: 700,
-          color: '#ffffff',
-        }}>
+        <span style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: 14, fontWeight: 700, color: '#fff' }}>
           ✓ Contacted
         </span>
       </div>
-
-      {/* Sliding row */}
-      <div
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-        style={{
-          transform: `translateX(-${offset}px)`,
-          transition: animating ? 'transform 0.25s ease' : 'none',
-          backgroundColor: 'var(--color-surface)',
-          touchAction: 'none',
-        }}
-      >
+      <div ref={slideRef} style={{ backgroundColor: 'var(--color-surface)' }}>
         {children}
       </div>
     </div>
