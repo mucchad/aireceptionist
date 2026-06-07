@@ -3,7 +3,7 @@
 // Leads table — shown on the owner dashboard
 // Displays each lead with customer info, job description, channel, time, and status
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Avatar } from '@/components/ui/avatar'
 import type { Lead, LeadStatus } from '@/types'
 
@@ -23,44 +23,84 @@ function SwipeableLeadRow({
   className?: string
 }) {
   const [offset, setOffset] = useState(0)
-  const [confirming, setConfirming] = useState(false) // snapping to full swipe
-  const [dismissed, setDismissed] = useState(false)   // collapsing out
+  const [transitioning, setTransitioning] = useState(false)
+  const [dismissed, setDismissed] = useState(false)
+  const outerRef = useRef<HTMLDivElement>(null)
+  const innerRef = useRef<HTMLDivElement>(null)
   const startX = useRef(0)
-  const rowRef = useRef<HTMLDivElement>(null)
+  const startY = useRef(0)
+  const dragging = useRef(false)
+  const currentOffset = useRef(0)
 
-  function handleTouchStart(e: React.TouchEvent) {
-    if (!canSwipe) return
-    startX.current = e.touches[0].clientX
-  }
+  useEffect(() => {
+    const inner = innerRef.current
+    if (!inner || !canSwipe) return
 
-  function handleTouchMove(e: React.TouchEvent) {
-    if (!canSwipe) return
-    const dx = startX.current - e.touches[0].clientX
-    if (dx > 0) setOffset(Math.min(dx, window.innerWidth * 0.7))
-  }
-
-  function handleTouchEnd() {
-    if (!canSwipe) return
-    const width = rowRef.current?.offsetWidth ?? window.innerWidth
-    if (offset >= width * SWIPE_THRESHOLD) {
-      // Confirmed — snap out then collapse
-      setConfirming(true)
-      setOffset(width)
-      setTimeout(() => {
-        setDismissed(true)
-        onContacted()
-      }, 260)
-    } else {
-      // Snap back
-      setOffset(0)
+    function onTouchStart(e: TouchEvent) {
+      startX.current = e.touches[0].clientX
+      startY.current = e.touches[0].clientY
+      dragging.current = false
     }
-  }
+
+    function onTouchMove(e: TouchEvent) {
+      const dx = startX.current - e.touches[0].clientX
+      const dy = Math.abs(startY.current - e.touches[0].clientY)
+
+      // Only take over if clearly horizontal
+      if (!dragging.current && Math.abs(dx) < 6) return
+      if (!dragging.current && dy > Math.abs(dx)) return
+
+      dragging.current = true
+      e.preventDefault()
+
+      const clamped = Math.max(0, Math.min(dx, window.innerWidth * 0.75))
+      currentOffset.current = clamped
+      if (inner) {
+        inner.style.transition = 'none'
+        inner.style.transform = `translateX(-${clamped}px)`
+      }
+      setOffset(clamped)
+    }
+
+    function onTouchEnd() {
+      if (!dragging.current) return
+      dragging.current = false
+      const width = outerRef.current?.offsetWidth ?? window.innerWidth
+      if (currentOffset.current >= width * SWIPE_THRESHOLD) {
+        setTransitioning(true)
+        if (inner) {
+          inner.style.transition = 'transform 0.25s ease'
+          inner.style.transform = `translateX(-${width}px)`
+        }
+        setTimeout(() => {
+          setDismissed(true)
+          onContacted()
+        }, 260)
+      } else {
+        if (inner) {
+          inner.style.transition = 'transform 0.3s ease'
+          inner.style.transform = 'translateX(0)'
+        }
+        setOffset(0)
+      }
+    }
+
+    inner.addEventListener('touchstart', onTouchStart, { passive: true })
+    inner.addEventListener('touchmove', onTouchMove, { passive: false })
+    inner.addEventListener('touchend', onTouchEnd, { passive: true })
+
+    return () => {
+      inner.removeEventListener('touchstart', onTouchStart)
+      inner.removeEventListener('touchmove', onTouchMove)
+      inner.removeEventListener('touchend', onTouchEnd)
+    }
+  }, [canSwipe, onContacted])
 
   if (dismissed) return null
 
   return (
     <div
-      ref={rowRef}
+      ref={outerRef}
       style={{ position: 'relative', overflow: 'hidden', ...style }}
       className={className}
     >
@@ -74,7 +114,7 @@ function SwipeableLeadRow({
           alignItems: 'center',
           justifyContent: 'flex-end',
           paddingRight: 24,
-          opacity: canSwipe ? Math.min(offset / 80, 1) : 0,
+          opacity: canSwipe ? Math.min(offset / 60, 1) : 0,
         }}
       >
         <span style={{
@@ -90,12 +130,8 @@ function SwipeableLeadRow({
 
       {/* Row content — slides left */}
       <div
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+        ref={innerRef}
         style={{
-          transform: `translateX(-${offset}px)`,
-          transition: confirming || offset === 0 ? 'transform 0.25s ease' : 'none',
           backgroundColor: 'var(--color-surface)',
           willChange: 'transform',
         }}
