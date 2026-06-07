@@ -30,6 +30,29 @@ interface FormData {
   contact_email: string
 }
 
+const KB_TEMPLATE = `## About This Business
+[Brief description of what the business does]
+
+## Services
+-
+-
+-
+
+## Service Area
+[Cities, zip codes, or radius]
+
+## Hours
+Monday – Friday:
+Saturday:
+Sunday:
+
+## FAQs
+Q:
+A:
+
+Q:
+A: `
+
 const INITIAL_FORM: FormData = {
   name: '',
   type: '',
@@ -40,7 +63,7 @@ const INITIAL_FORM: FormData = {
   google_maps_url: '',
   facebook_url: '',
   yelp_url: '',
-  manual_content: '',
+  manual_content: KB_TEMPLATE,
   contact_name: '',
   contact_phone: '',
   contact_email: '',
@@ -622,12 +645,13 @@ export default function NewAccountPage() {
               <textarea
                 style={{
                   ...inputStyle,
-                  height: 120,
+                  height: 280,
                   padding: '10px 14px',
                   resize: 'vertical',
-                  lineHeight: 1.5,
+                  lineHeight: 1.6,
+                  fontFamily: 'monospace',
+                  fontSize: 13,
                 }}
-                placeholder="e.g. We install wood, vinyl, and chain-link fences. Service area: Dallas, TX and surrounding areas within 30 miles. Hours: Mon–Fri 8am–6pm, Sat 9am–2pm..."
                 value={form.manual_content}
                 onChange={(e) => update('manual_content', e.target.value)}
               />

@@ -8,6 +8,29 @@ import { useRouter, useParams } from 'next/navigation'
 
 type EmergencyProtocol = 'capture-and-notify' | 'direct-number' | 'immediate-sms'
 
+const KB_TEMPLATE = `## About This Business
+[Brief description of what the business does]
+
+## Services
+-
+-
+-
+
+## Service Area
+[Cities, zip codes, or radius]
+
+## Hours
+Monday – Friday:
+Saturday:
+Sunday:
+
+## FAQs
+Q:
+A:
+
+Q:
+A: `
+
 interface FormData {
   name: string
   type: string
@@ -155,7 +178,7 @@ export default function EditAccountPage() {
           google_maps_url: googleMaps?.url ?? '',
           facebook_url: facebook?.url ?? '',
           yelp_url: yelp?.url ?? '',
-          manual_content: manual?.content ?? '',
+          manual_content: manual?.content ?? KB_TEMPLATE,
           contact_name: contact?.name ?? '',
           contact_phone: contact?.phone ?? '',
           contact_email: contact?.email ?? '',
