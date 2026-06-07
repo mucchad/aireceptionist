@@ -71,9 +71,9 @@ export function buildVoiceTwiml(
       speechTimeout: 'auto',
       language: 'en-US',
     })
-    gather.say({ voice: 'Polly.Joanna-Neural', language: 'en-US' }, `<prosody rate="medium">${message}</prosody>`)
+    gather.say({ voice: 'Polly.Joanna-Neural', language: 'en-US' }, message)
   } else {
-    twiml.say({ voice: 'Polly.Joanna-Neural', language: 'en-US' }, `<prosody rate="medium">${message}</prosody>`)
+    twiml.say({ voice: 'Polly.Joanna-Neural', language: 'en-US' }, message)
   }
 
   if (hangup) twiml.hangup()
