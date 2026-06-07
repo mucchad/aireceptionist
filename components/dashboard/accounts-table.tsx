@@ -139,10 +139,8 @@ export function AccountsTable({ filter }: AccountsTableProps) {
       {filtered.map((account, index) => (
         <div
           key={account.id}
-          onClick={() =>
-            window.open(`/dashboard/${account.dashboard_token}`, '_blank')
-          }
-          title="Open owner dashboard"
+          onClick={() => router.push(`/accounts/${account.id}/edit`)}
+          title="Edit account"
           style={{
             display: 'grid',
             gridTemplateColumns: 'minmax(0,1.7fr) 120px 172px 150px 96px 64px',
@@ -232,14 +230,15 @@ export function AccountsTable({ filter }: AccountsTableProps) {
             {leadCounts[account.id] ?? 0}
           </div>
 
-          {/* Edit button */}
+          {/* View leads — opens owner dashboard in new tab */}
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <button
               onClick={(e) => {
-                // Stop the row click from opening the owner dashboard
+                // Stop the row click from going to edit
                 e.stopPropagation()
-                router.push(`/accounts/${account.id}/edit`)
+                window.open(`/dashboard/${account.dashboard_token}`, '_blank')
               }}
+              title="View leads dashboard"
               style={{
                 height: 28,
                 padding: '0 10px',
@@ -253,7 +252,7 @@ export function AccountsTable({ filter }: AccountsTableProps) {
                 cursor: 'pointer',
               }}
             >
-              Edit
+              Leads ↗
             </button>
           </div>
         </div>
