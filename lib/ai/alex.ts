@@ -52,13 +52,11 @@ UNKNOWN INFORMATION
 - Never invent prices, availability, or promises
 
 LEAD CAPTURE
-- The minimum you need to capture a lead is: customer's full name and job description
-- Ask for a service address once — if they don't provide it or give a partial answer, accept it and move on
+- The minimum you need is: customer's full name and job description
+- Ask for a service address once — if they don't give one or give a partial answer, accept it and move on
 - Never ask for the same information twice
-- Once you have name + job, output the block below immediately on a new line — even if the conversation is still ongoing
-- This block is hidden from the customer and must never be spoken aloud:
-[LEAD_CAPTURED: {"name": "<customer full name>", "job": "<job description>", "address": "<address if given, otherwise leave blank>"}]
-- After outputting the block, close warmly: "Thanks [name]! Someone from ${account.name} will be in touch with you shortly to confirm the details."
+- Once you have name + job (address optional), call the capture_lead tool immediately
+- After calling the tool, close warmly: "Thanks [name]! Someone from ${account.name} will be in touch with you shortly."
 
 EMERGENCIES
 ${emergencyInstructions[account.emergency_protocol] ?? emergencyInstructions['capture-and-notify']}
@@ -87,20 +85,32 @@ export interface AlexResponse {
   }
 }
 
+// Tool definition — Claude calls this when it has enough info to capture a lead
+const CAPTURE_LEAD_TOOL: Anthropic.Tool = {
+  name: 'capture_lead',
+  description: 'Call this tool as soon as you have the customer\'s full name and job description. Address is optional — include it if provided.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      name:    { type: 'string', description: 'Customer\'s full name' },
+      job:     { type: 'string', description: 'What the customer needs done' },
+      address: { type: 'string', description: 'Service address if provided' },
+    },
+    required: ['name', 'job'],
+  },
+}
+
 // Run a message through Alex and get a response
 export async function runAlex(
   systemPrompt: string,
   history: ConversationMessage[],  // full conversation so far
   newMessage: string               // latest customer message
 ): Promise<AlexResponse> {
-  // Build the messages array for Claude
   const messages: Anthropic.MessageParam[] = [
-    // Include conversation history
     ...history.map((m) => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
     })),
-    // Add the new customer message
     { role: 'user' as const, content: newMessage },
   ]
 
@@ -108,30 +118,34 @@ export async function runAlex(
     model: 'claude-sonnet-4-6',
     max_tokens: 1024,
     system: systemPrompt,
+    tools: [CAPTURE_LEAD_TOOL],
     messages,
   })
 
-  const fullText = response.content
+  // Extract text response
+  const message = response.content
     .filter((b) => b.type === 'text')
     .map((b) => (b as Anthropic.TextBlock).text)
     .join('')
+    .trim()
 
-  // Check if Alex captured a lead
-  const leadMatch = fullText.match(/\[LEAD_CAPTURED:\s*({.*?})\]/s)
-  let leadCaptured = false
-  let leadData: { name: string; job: string } | undefined
+  // Check if Alex called the capture_lead tool
+  const toolUse = response.content.find(
+    (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === 'capture_lead'
+  )
 
-  if (leadMatch) {
-    try {
-      leadData = JSON.parse(leadMatch[1])
-      leadCaptured = true
-    } catch {
-      // Malformed JSON — ignore, continue conversation
+  if (toolUse) {
+    const input = toolUse.input as { name: string; job: string; address?: string }
+    return {
+      message,
+      leadCaptured: true,
+      leadData: {
+        name: input.name,
+        job: input.job,
+        address: input.address,
+      },
     }
   }
 
-  // Strip the hidden [LEAD_CAPTURED:...] block from the customer-facing message
-  const message = fullText.replace(/\[LEAD_CAPTURED:.*?\]/s, '').trim()
-
-  return { message, leadCaptured, leadData }
+  return { message, leadCaptured: false }
 }
