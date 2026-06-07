@@ -60,16 +60,31 @@ export async function saveKnowledgeBaseSources(
   if (error) throw new Error(`Failed to save knowledge base sources: ${error.message}`)
 }
 
-// Get all accounts (for the admin list)
+// Get all active (non-deleted) accounts for the admin list
+// Filter deleted_at in JS — Supabase .is() filter can be unreliable after schema changes
 export async function getAccounts(): Promise<Account[]> {
   const supabase = getSupabase()
   const { data, error } = await supabase
     .from('accounts')
-    .select('*')
-    .is('deleted_at', null)
+    .select('id, name, type, status, persona_name, twilio_phone_number, dashboard_token, logo_url, emergency_protocol, notify_sms, deleted_at, created_at, updated_at')
 
   if (error) throw new Error(`Failed to fetch accounts: ${error.message}`)
-  return (data ?? []).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  return (data ?? [])
+    .filter((a) => !a.deleted_at)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+}
+
+// Get all soft-deleted accounts
+export async function getDeletedAccounts(): Promise<Account[]> {
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from('accounts')
+    .select('id, name, type, status, persona_name, twilio_phone_number, dashboard_token, logo_url, emergency_protocol, notify_sms, deleted_at, created_at, updated_at')
+
+  if (error) throw new Error(`Failed to fetch accounts: ${error.message}`)
+  return (data ?? [])
+    .filter((a) => !!a.deleted_at)
+    .sort((a, b) => new Date(b.deleted_at).getTime() - new Date(a.deleted_at).getTime())
 }
 
 // Get a single account by ID

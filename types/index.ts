@@ -20,6 +20,8 @@ export interface Account {
   emergency_contact?: string      // phone number for direct-number protocol
   knowledge_base?: string         // compiled text fed into the system prompt
   notify_sms: boolean
+  logo_url?: string
+  deleted_at?: string | null
   created_at: string
   updated_at: string
 }
