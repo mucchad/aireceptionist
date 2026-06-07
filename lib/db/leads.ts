@@ -11,23 +11,30 @@ function getSupabase() {
   return createClient(url, key)
 }
 
+const LEAD_COLS = 'id,account_id,customer_name,customer_phone,job_description,service_address,channel,status,created_at'
+
 // Get all leads for an account, newest first
-// Explicit column list avoids Supabase schema cache issues after ALTER TABLE
+// Uses direct REST fetch — supabase-js on Vercel returns stale rows for this table
 export async function getLeads(accountId: string): Promise<Lead[]> {
-  const supabase = getSupabase()
-  const { data, error } = await supabase
-    .from('leads')
-    .select('id, account_id, customer_name, customer_phone, job_description, service_address, channel, status, created_at')
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) throw new Error('Missing Supabase environment variables')
 
-  console.log(`[getLeads] accountId=${accountId} raw rows=${data?.length ?? 0} error=${error?.message ?? 'none'}`)
+  const res = await fetch(
+    `${url}/rest/v1/leads?account_id=eq.${accountId}&select=${LEAD_COLS}`,
+    {
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    }
+  )
 
-  if (error) throw new Error(`Failed to fetch leads: ${error.message}`)
-  const filtered = (data ?? [])
-    .filter((l) => l.account_id === accountId)
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-
-  console.log(`[getLeads] filtered rows=${filtered.length}`)
-  return filtered
+  if (!res.ok) throw new Error(`Failed to fetch leads: ${res.status}`)
+  const data: Lead[] = await res.json()
+  return data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 }
 
 // Update the status of a lead (new → contacted → resolved)
