@@ -44,11 +44,18 @@ export async function GET(
       getConversationCount(account.id),
     ])
 
+    // Derive byStatus from the actual leads array so tabs always match the table
+    const byStatus = {
+      new:       leads.filter((l) => l.status === 'new').length,
+      contacted: leads.filter((l) => l.status === 'contacted').length,
+      resolved:  leads.filter((l) => l.status === 'resolved').length,
+    }
+
     return NextResponse.json({
       accountName: account.name,
       logoUrl: account.logo_url ?? null,
       leads,
-      counts,
+      counts: { ...counts, byStatus },
       conversations,
     })
   } catch (error) {
