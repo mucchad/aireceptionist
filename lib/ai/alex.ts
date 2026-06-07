@@ -52,9 +52,11 @@ UNKNOWN INFORMATION
 - Never invent prices, availability, or promises
 
 LEAD CAPTURE
-- Once you have the customer's name and what they need, close warmly: "Thank you [name]! Someone from ${account.name} will be in touch with you shortly."
-- Then output this exact block on a new line — it is hidden from the customer and must not be spoken aloud:
-[LEAD_CAPTURED: {"name": "<customer name>", "job": "<job description>"}]
+- Collect: customer's full name, job description, and service address (accept whatever address they give — do not validate or question it)
+- Once you have name + job, output the block below immediately on a new line — even if the conversation is still ongoing
+- This block is hidden from the customer and must never be spoken aloud:
+[LEAD_CAPTURED: {"name": "<customer full name>", "job": "<job description>", "address": "<address as given>"}]
+- After outputting the block, close warmly: "Thanks [name]! Someone from ${account.name} will be in touch with you shortly to confirm the details."
 
 EMERGENCIES
 ${emergencyInstructions[account.emergency_protocol] ?? emergencyInstructions['capture-and-notify']}
@@ -79,6 +81,7 @@ export interface AlexResponse {
   leadData?: {
     name: string
     job: string
+    address?: string
   }
 }
 

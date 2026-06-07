@@ -66,6 +66,7 @@ export interface Lead {
   customer_name?: string
   customer_phone: string
   job_description?: string
+  service_address?: string
   channel: LeadChannel
   status: LeadStatus
   created_at: string

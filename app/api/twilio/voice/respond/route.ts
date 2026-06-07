@@ -81,6 +81,7 @@ export async function POST(request: Request) {
           customer_name: leadData.name,
           customer_phone: from,
           job_description: leadData.job,
+          service_address: leadData.address ?? null,
           channel: 'call',
           status: 'new',
         })
