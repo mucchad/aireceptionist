@@ -6,8 +6,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 
-type EmergencyProtocol = 'capture-and-notify' | 'direct-number' | 'immediate-sms'
-
 const KB_TEMPLATE = `## About This Business
 [Brief description of what the business does]
 
@@ -35,8 +33,6 @@ interface FormData {
   name: string
   type: string
   persona_name: string
-  emergency_protocol: EmergencyProtocol
-  emergency_contact: string
   website_url: string
   google_maps_url: string
   facebook_url: string
@@ -46,24 +42,6 @@ interface FormData {
   contact_phone: string
   contact_email: string
 }
-
-const EMERGENCY_OPTIONS: { value: EmergencyProtocol; label: string; description: string }[] = [
-  {
-    value: 'capture-and-notify',
-    label: 'Capture and notify',
-    description: 'Alex captures the info and says someone will call back within the hour',
-  },
-  {
-    value: 'immediate-sms',
-    label: 'Immediate SMS',
-    description: 'Alex texts you immediately when an emergency comes in',
-  },
-  {
-    value: 'direct-number',
-    label: 'Give direct number',
-    description: 'Alex gives the customer your direct phone number for emergencies',
-  },
-]
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -172,8 +150,6 @@ export default function EditAccountPage() {
           name: account.name ?? '',
           type: account.type ?? '',
           persona_name: account.persona_name ?? 'Alex',
-          emergency_protocol: account.emergency_protocol ?? 'capture-and-notify',
-          emergency_contact: account.emergency_contact ?? '',
           website_url: website?.url ?? '',
           google_maps_url: googleMaps?.url ?? '',
           facebook_url: facebook?.url ?? '',
@@ -290,86 +266,70 @@ export default function EditAccountPage() {
           gap: '32px 48px',
         }}
       >
-        {/* ── Section 1: Business basics — left column ── */}
-        <div>
-          <SectionHeader title="Business basics" subtitle="Core details about this client" />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Field label="Account name *">
-              <input
-                style={inputStyle}
-                value={form.name}
-                onChange={(e) => update('name', e.target.value)}
-              />
-            </Field>
-
-            <Field label="Business type *">
-              <input
-                style={inputStyle}
-                placeholder="e.g. Fence installation, Plumbing, HVAC"
-                value={form.type}
-                onChange={(e) => update('type', e.target.value)}
-              />
-            </Field>
-
-            <Field label="AI persona name" hint="The name Alex uses when answering calls and texts">
-              <input
-                style={inputStyle}
-                value={form.persona_name}
-                onChange={(e) => update('persona_name', e.target.value)}
-              />
-            </Field>
-
-            <Field label="Emergency protocol">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
-                {EMERGENCY_OPTIONS.map((opt) => (
-                  <label
-                    key={opt.value}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: 12,
-                      padding: '12px 14px',
-                      borderRadius: 'var(--radius-control)',
-                      border: `1px solid ${form.emergency_protocol === opt.value ? 'var(--color-accent)' : 'var(--color-border)'}`,
-                      backgroundColor: form.emergency_protocol === opt.value ? 'var(--color-accent-weak)' : 'var(--color-surface-sunken)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      name="emergency_protocol"
-                      value={opt.value}
-                      checked={form.emergency_protocol === opt.value}
-                      onChange={() => update('emergency_protocol', opt.value)}
-                      style={{ marginTop: 2, accentColor: 'var(--color-accent)' }}
-                    />
-                    <div>
-                      <div style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: 13, fontWeight: 600, color: 'var(--color-text)' }}>
-                        {opt.label}
-                      </div>
-                      <div style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>
-                        {opt.description}
-                      </div>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </Field>
-
-            {form.emergency_protocol === 'direct-number' && (
-              <Field label="Emergency direct number *">
+        {/* ── Left column: Business basics + Primary contact ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+          <div>
+            <SectionHeader title="Business basics" subtitle="Core details about this client" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <Field label="Account name *">
                 <input
                   style={inputStyle}
-                  placeholder="+1 (555) 000-0000"
-                  value={form.emergency_contact}
-                  onChange={(e) => update('emergency_contact', e.target.value)}
+                  value={form.name}
+                  onChange={(e) => update('name', e.target.value)}
                 />
               </Field>
-            )}
+
+              <Field label="Business type *">
+                <input
+                  style={inputStyle}
+                  placeholder="e.g. Fence installation, Plumbing, HVAC"
+                  value={form.type}
+                  onChange={(e) => update('type', e.target.value)}
+                />
+              </Field>
+
+              <Field label="AI persona name" hint="The name Alex uses when answering calls and texts">
+                <input
+                  style={inputStyle}
+                  value={form.persona_name}
+                  onChange={(e) => update('persona_name', e.target.value)}
+                />
+              </Field>
+            </div>
+          </div>
+
+          <div>
+            <SectionHeader title="Primary contact" subtitle="Who gets notified when a new lead comes in" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <Field label="Contact name *">
+                <input
+                  style={inputStyle}
+                  value={form.contact_name}
+                  onChange={(e) => update('contact_name', e.target.value)}
+                />
+              </Field>
+
+              <Field label="Mobile phone *" hint="Gets a text every time Alex captures a new lead">
+                <input
+                  style={inputStyle}
+                  value={form.contact_phone}
+                  onChange={(e) => update('contact_phone', e.target.value)}
+                />
+              </Field>
+
+              <Field label="Email address" hint="Optional — for future email notifications">
+                <input
+                  style={inputStyle}
+                  type="email"
+                  value={form.contact_email}
+                  onChange={(e) => update('contact_email', e.target.value)}
+                />
+              </Field>
+            </div>
           </div>
         </div>
 
-        {/* ── Section 2: Knowledge base — right column ── */}
+        {/* ── Right column: Knowledge base ── */}
         <div>
           <SectionHeader title="Knowledge base" subtitle="What Alex knows about this business" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -409,49 +369,19 @@ export default function EditAccountPage() {
               />
             </Field>
 
-            <Field label="Manual write-up" hint="No website? Paste anything useful — services, prices, hours, FAQs">
+            <Field label="Manual write-up" hint="Fill in what Alex should know about this business">
               <textarea
                 style={{
                   ...inputStyle,
-                  height: 160,
+                  height: 340,
                   padding: '10px 14px',
                   resize: 'vertical',
                   lineHeight: 1.6,
+                  fontFamily: 'monospace',
+                  fontSize: 13,
                 }}
                 value={form.manual_content}
                 onChange={(e) => update('manual_content', e.target.value)}
-                placeholder="e.g. We install wood, vinyl, and chain-link fences. Service area: San Jose, CA and surrounding areas within 30 miles. Hours: Mon–Fri 8am–6pm, Sat 9am–2pm..."
-              />
-            </Field>
-          </div>
-        </div>
-
-        {/* ── Section 3: Primary contact — spans both columns ── */}
-        <div style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--color-border)', paddingTop: 28 }}>
-          <SectionHeader title="Primary contact" subtitle="Who gets notified when a new lead comes in" />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-            <Field label="Contact name *">
-              <input
-                style={inputStyle}
-                value={form.contact_name}
-                onChange={(e) => update('contact_name', e.target.value)}
-              />
-            </Field>
-
-            <Field label="Mobile phone *" hint="Gets a text message every time Alex captures a new lead">
-              <input
-                style={inputStyle}
-                value={form.contact_phone}
-                onChange={(e) => update('contact_phone', e.target.value)}
-              />
-            </Field>
-
-            <Field label="Email address" hint="Optional — for future email notifications">
-              <input
-                style={inputStyle}
-                type="email"
-                value={form.contact_email}
-                onChange={(e) => update('contact_email', e.target.value)}
               />
             </Field>
           </div>

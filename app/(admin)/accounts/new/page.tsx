@@ -3,8 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-type EmergencyProtocol = 'capture-and-notify' | 'direct-number' | 'immediate-sms'
-
 interface Source {
   type: 'website' | 'google_maps' | 'facebook' | 'yelp' | 'manual'
   url?: string
@@ -16,8 +14,6 @@ interface FormData {
   name: string
   type: string
   persona_name: string
-  emergency_protocol: EmergencyProtocol
-  emergency_contact: string
   // Step 2
   website_url: string
   google_maps_url: string
@@ -57,8 +53,6 @@ const INITIAL_FORM: FormData = {
   name: '',
   type: '',
   persona_name: 'Alex',
-  emergency_protocol: 'capture-and-notify',
-  emergency_contact: '',
   website_url: '',
   google_maps_url: '',
   facebook_url: '',
@@ -68,24 +62,6 @@ const INITIAL_FORM: FormData = {
   contact_phone: '',
   contact_email: '',
 }
-
-const EMERGENCY_OPTIONS: { value: EmergencyProtocol; label: string; description: string }[] = [
-  {
-    value: 'capture-and-notify',
-    label: 'Capture and notify',
-    description: 'Alex captures the info and says someone will call back within the hour',
-  },
-  {
-    value: 'immediate-sms',
-    label: 'Immediate SMS',
-    description: 'Alex texts you immediately when an emergency comes in',
-  },
-  {
-    value: 'direct-number',
-    label: 'Give direct number',
-    description: 'Alex gives the customer your direct phone number for emergencies',
-  },
-]
 
 // Reusable input style
 const inputStyle: React.CSSProperties = {
@@ -216,8 +192,6 @@ export default function NewAccountPage() {
     if (s === 1) {
       if (!form.name.trim()) return 'Account name is required'
       if (!form.type.trim()) return 'Business type is required'
-      if (form.emergency_protocol === 'direct-number' && !form.emergency_contact.trim())
-        return 'Direct number is required for this emergency protocol'
     }
     if (s === 2) {
       const hasSources =
@@ -274,8 +248,7 @@ export default function NewAccountPage() {
           name: form.name,
           type: form.type,
           persona_name: form.persona_name,
-          emergency_protocol: form.emergency_protocol,
-          emergency_contact: form.emergency_contact || undefined,
+          emergency_protocol: 'capture-and-notify',
           sources,
           contact_name: form.contact_name,
           contact_phone: form.contact_phone,
@@ -516,74 +489,6 @@ export default function NewAccountPage() {
               />
             </Field>
 
-            <Field label="Emergency protocol">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
-                {EMERGENCY_OPTIONS.map((opt) => (
-                  <label
-                    key={opt.value}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: 12,
-                      padding: '12px 14px',
-                      borderRadius: 'var(--radius-control)',
-                      border: `1px solid ${
-                        form.emergency_protocol === opt.value
-                          ? 'var(--color-accent)'
-                          : 'var(--color-border)'
-                      }`,
-                      backgroundColor:
-                        form.emergency_protocol === opt.value
-                          ? 'var(--color-accent-weak)'
-                          : 'var(--color-surface-sunken)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      name="emergency_protocol"
-                      value={opt.value}
-                      checked={form.emergency_protocol === opt.value}
-                      onChange={() => update('emergency_protocol', opt.value)}
-                      style={{ marginTop: 2, accentColor: 'var(--color-accent)' }}
-                    />
-                    <div>
-                      <div
-                        style={{
-                          fontFamily: "'Hanken Grotesk', sans-serif",
-                          fontSize: 13,
-                          fontWeight: 600,
-                          color: 'var(--color-text)',
-                        }}
-                      >
-                        {opt.label}
-                      </div>
-                      <div
-                        style={{
-                          fontFamily: "'Hanken Grotesk', sans-serif",
-                          fontSize: 12,
-                          color: 'var(--color-text-muted)',
-                          marginTop: 2,
-                        }}
-                      >
-                        {opt.description}
-                      </div>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </Field>
-
-            {form.emergency_protocol === 'direct-number' && (
-              <Field label="Emergency direct number *">
-                <input
-                  style={inputStyle}
-                  placeholder="+1 (555) 000-0000"
-                  value={form.emergency_contact}
-                  onChange={(e) => update('emergency_contact', e.target.value)}
-                />
-              </Field>
-            )}
           </FieldGroup>
         )}
 
