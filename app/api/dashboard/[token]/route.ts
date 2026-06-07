@@ -27,7 +27,7 @@ export async function GET(
     const supabase = getSupabase()
     const { data: account, error } = await supabase
       .from('accounts')
-      .select('id, name, status')
+      .select('id, name, status, logo_url')
       .eq('dashboard_token', token)
       .single()
 
@@ -44,6 +44,7 @@ export async function GET(
 
     return NextResponse.json({
       accountName: account.name,
+      logoUrl: account.logo_url ?? null,
       leads,
       counts,
       conversations,

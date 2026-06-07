@@ -18,6 +18,7 @@ const TABS: { key: Filter; label: string }[] = [
 
 interface DashboardData {
   accountName: string
+  logoUrl?: string | null
   leads: Lead[]
   counts: {
     today: number
@@ -126,7 +127,7 @@ export default function OwnerDashboardPage() {
   // ── Dashboard ────────────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'var(--color-bg)' }}>
-      <OwnerTopBar businessName={data.accountName} />
+      <OwnerTopBar businessName={data.accountName} logoUrl={data.logoUrl} />
 
       <div className="owner-dashboard-body">
 

@@ -3,10 +3,11 @@
 
 interface OwnerTopBarProps {
   businessName: string
+  logoUrl?: string | null
 }
 
-export function OwnerTopBar({ businessName }: OwnerTopBarProps) {
-  // Generate initials from business name for the logo mark
+export function OwnerTopBar({ businessName, logoUrl }: OwnerTopBarProps) {
+  // Generate initials from business name for the logo mark (fallback when no logo)
   const initials = businessName
     .split(' ')
     .map((w) => w[0])
@@ -28,24 +29,41 @@ export function OwnerTopBar({ businessName }: OwnerTopBarProps) {
     >
       {/* Business brand lockup */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div
-          style={{
-            width: 26,
-            height: 26,
-            borderRadius: 'var(--radius-logo)',
-            backgroundColor: 'var(--color-accent)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontFamily: "'Bricolage Grotesque', sans-serif",
-            fontSize: 11,
-            fontWeight: 700,
-            color: 'var(--color-on-accent)',
-            flexShrink: 0,
-          }}
-        >
-          {initials}
-        </div>
+        {logoUrl ? (
+          // Show uploaded logo
+          <img
+            src={logoUrl}
+            alt={businessName}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 'var(--radius-logo)',
+              objectFit: 'contain',
+              flexShrink: 0,
+              backgroundColor: 'var(--color-surface-sunken)',
+            }}
+          />
+        ) : (
+          // Fallback: initials square
+          <div
+            style={{
+              width: 26,
+              height: 26,
+              borderRadius: 'var(--radius-logo)',
+              backgroundColor: 'var(--color-accent)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontFamily: "'Bricolage Grotesque', sans-serif",
+              fontSize: 11,
+              fontWeight: 700,
+              color: 'var(--color-on-accent)',
+              flexShrink: 0,
+            }}
+          >
+            {initials}
+          </div>
+        )}
         <span
           style={{
             fontFamily: "'Bricolage Grotesque', sans-serif",
@@ -91,24 +109,6 @@ export function OwnerTopBar({ businessName }: OwnerTopBarProps) {
         Live
       </div>
 
-      {/* Export button (ghost) */}
-      <button
-        style={{
-          height: 38,
-          padding: '0 16px',
-          borderRadius: 'var(--radius-control)',
-          backgroundColor: 'transparent',
-          color: 'var(--color-text)',
-          border: '1px solid var(--color-border)',
-          fontFamily: "'Hanken Grotesk', sans-serif",
-          fontSize: 13.5,
-          fontWeight: 600,
-          cursor: 'pointer',
-        }}
-        onClick={() => alert('Export coming soon')}
-      >
-        Export
-      </button>
     </header>
   )
 }

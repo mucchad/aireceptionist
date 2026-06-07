@@ -126,6 +126,9 @@ export default function EditAccountPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [saved, setSaved] = useState(false)
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
+  const [logoUploading, setLogoUploading] = useState(false)
+  const [logoError, setLogoError] = useState('')
 
   // Load existing data
   useEffect(() => {
@@ -144,6 +147,7 @@ export default function EditAccountPage() {
         const yelp = sources.find((s: { type: string }) => s.type === 'yelp')
         const manual = sources.find((s: { type: string }) => s.type === 'manual')
 
+        setLogoUrl(account.logo_url ?? null)
         setForm({
           name: account.name ?? '',
           type: account.type ?? '',
@@ -169,6 +173,23 @@ export default function EditAccountPage() {
   function update(field: keyof FormData, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
     setSaved(false)
+  }
+
+  async function uploadLogo(file: File) {
+    setLogoError('')
+    setLogoUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('logo', file)
+      const res = await fetch(`/api/accounts/${id}/logo`, { method: 'POST', body: fd })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error)
+      setLogoUrl(json.logo_url)
+    } catch (e) {
+      setLogoError(e instanceof Error ? e.message : 'Upload failed')
+    } finally {
+      setLogoUploading(false)
+    }
   }
 
   async function save() {
@@ -264,8 +285,77 @@ export default function EditAccountPage() {
           gap: '32px 48px',
         }}
       >
-        {/* ── Left column: Business basics + Primary contact ── */}
+        {/* ── Left column: Logo + Business basics + Primary contact ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+
+          {/* Logo upload */}
+          <div>
+            <SectionHeader title="Business logo" subtitle="Shown on the client's dashboard" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              {/* Preview */}
+              <div
+                style={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: 'var(--radius-control)',
+                  border: '1px solid var(--color-border)',
+                  backgroundColor: 'var(--color-surface-sunken)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                  flexShrink: 0,
+                }}
+              >
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                ) : (
+                  <span style={{ fontSize: 28 }}>🏢</span>
+                )}
+              </div>
+
+              {/* Upload controls */}
+              <div style={{ flex: 1 }}>
+                <label
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    height: 36,
+                    padding: '0 16px',
+                    borderRadius: 'var(--radius-control)',
+                    backgroundColor: logoUploading ? 'var(--color-surface-sunken)' : 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                    fontFamily: "'Hanken Grotesk', sans-serif",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: 'var(--color-text-secondary)',
+                    cursor: logoUploading ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {logoUploading ? 'Uploading…' : logoUrl ? 'Replace logo' : 'Upload logo'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    disabled={logoUploading}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) uploadLogo(file)
+                    }}
+                  />
+                </label>
+                <p style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: 12, color: 'var(--color-text-muted)', margin: '6px 0 0' }}>
+                  PNG, JPG or SVG · Max 2MB
+                </p>
+                {logoError && (
+                  <p style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: 12, color: 'var(--color-accent-text)', margin: '4px 0 0' }}>
+                    {logoError}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div>
             <SectionHeader title="Business basics" subtitle="Core details about this client" />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
