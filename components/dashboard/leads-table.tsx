@@ -34,6 +34,7 @@ function SwipeableLeadRow({
     const slide = slideRef.current
     const bg = bgRef.current
     if (!wrap || !slide || !bg) return
+    const wEl = wrap, sEl = slide, bEl = bg
 
     let x0 = 0, y0 = 0, dx = 0
     let decided = false, isH = false
@@ -42,7 +43,7 @@ function SwipeableLeadRow({
       x0 = e.touches[0].clientX
       y0 = e.touches[0].clientY
       dx = 0; decided = false; isH = false
-      slide.style.transition = 'none'
+      sEl.style.transition = 'none'
     }
 
     function move(e: TouchEvent) {
@@ -56,31 +57,31 @@ function SwipeableLeadRow({
       if (!isH) return
       e.preventDefault()
       dx = Math.max(0, x0 - x)
-      slide.style.transform = `translateX(-${dx}px)`
-      bg.style.opacity = String(Math.min(dx / 80, 1))
+      sEl.style.transform = `translateX(-${dx}px)`
+      bEl.style.opacity = String(Math.min(dx / 80, 1))
     }
 
     function end() {
       if (!isH) return
-      const w = wrap.offsetWidth || 320
+      const w = wEl.offsetWidth || 320
       if (dx >= w * SWIPE_THRESHOLD) {
-        slide.style.transition = 'transform 0.22s ease'
-        slide.style.transform = `translateX(-${w}px)`
+        sEl.style.transition = 'transform 0.22s ease'
+        sEl.style.transform = `translateX(-${w}px)`
         setTimeout(() => { setDismissed(true); cbRef.current() }, 230)
       } else {
-        slide.style.transition = 'transform 0.25s ease'
-        slide.style.transform = 'translateX(0)'
-        bg.style.opacity = '0'
+        sEl.style.transition = 'transform 0.25s ease'
+        sEl.style.transform = 'translateX(0)'
+        bEl.style.opacity = '0'
       }
     }
 
-    wrap.addEventListener('touchstart', start, { passive: true })
-    wrap.addEventListener('touchmove', move, { passive: false })
-    wrap.addEventListener('touchend', end, { passive: true })
+    wEl.addEventListener('touchstart', start, { passive: true })
+    wEl.addEventListener('touchmove', move, { passive: false })
+    wEl.addEventListener('touchend', end, { passive: true })
     return () => {
-      wrap.removeEventListener('touchstart', start)
-      wrap.removeEventListener('touchmove', move)
-      wrap.removeEventListener('touchend', end)
+      wEl.removeEventListener('touchstart', start)
+      wEl.removeEventListener('touchmove', move)
+      wEl.removeEventListener('touchend', end)
     }
   }, [])
 
