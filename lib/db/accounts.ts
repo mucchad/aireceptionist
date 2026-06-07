@@ -60,31 +60,43 @@ export async function saveKnowledgeBaseSources(
   if (error) throw new Error(`Failed to save knowledge base sources: ${error.message}`)
 }
 
-// Get all active (non-deleted) accounts for the admin list
-// Filter deleted_at in JS — Supabase .is() filter can be unreliable after schema changes
-export async function getAccounts(): Promise<Account[]> {
-  const supabase = getSupabase()
-  const { data, error } = await supabase
-    .from('accounts')
-    .select('id, name, type, status, persona_name, twilio_phone_number, dashboard_token, logo_url, emergency_protocol, notify_sms, deleted_at, created_at, updated_at')
+const COLS = 'id,name,type,status,persona_name,twilio_phone_number,dashboard_token,logo_url,emergency_protocol,notify_sms,deleted_at,created_at,updated_at'
 
-  if (error) throw new Error(`Failed to fetch accounts: ${error.message}`)
-  return (data ?? [])
-    .filter((a) => !a.deleted_at)
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+// Direct REST fetch — bypasses supabase-js entirely to avoid any schema cache or
+// null-serialization quirks. PostgREST filtering confirmed working after schema reload.
+async function fetchAccounts(filter: 'active' | 'deleted'): Promise<Account[]> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) throw new Error('Missing Supabase environment variables')
+
+  const qs = filter === 'active'
+    ? `deleted_at=is.null&select=${COLS}`
+    : `deleted_at=not.is.null&select=${COLS}`
+
+  const res = await fetch(`${url}/rest/v1/accounts?${qs}`, {
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+    },
+    // Never cache — always fresh
+    cache: 'no-store',
+  })
+
+  if (!res.ok) throw new Error(`Failed to fetch accounts: ${res.status}`)
+  return res.json() as Promise<Account[]>
+}
+
+// Get all active (non-deleted) accounts
+export async function getAccounts(): Promise<Account[]> {
+  const data = await fetchAccounts('active')
+  return data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 }
 
 // Get all soft-deleted accounts
 export async function getDeletedAccounts(): Promise<Account[]> {
-  const supabase = getSupabase()
-  const { data, error } = await supabase
-    .from('accounts')
-    .select('id, name, type, status, persona_name, twilio_phone_number, dashboard_token, logo_url, emergency_protocol, notify_sms, deleted_at, created_at, updated_at')
-
-  if (error) throw new Error(`Failed to fetch accounts: ${error.message}`)
-  return (data ?? [])
-    .filter((a) => !!a.deleted_at)
-    .sort((a, b) => new Date(b.deleted_at).getTime() - new Date(a.deleted_at).getTime())
+  const data = await fetchAccounts('deleted')
+  return data.sort((a, b) => new Date(b.deleted_at!).getTime() - new Date(a.deleted_at!).getTime())
 }
 
 // Get a single account by ID
