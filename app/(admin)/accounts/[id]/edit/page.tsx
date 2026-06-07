@@ -131,6 +131,28 @@ export default function EditAccountPage() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [logoUploading, setLogoUploading] = useState(false)
   const [logoError, setLogoError] = useState('')
+  const [generating, setGenerating] = useState(false)
+  const [generateError, setGenerateError] = useState('')
+
+  async function generateKnowledgeBase() {
+    if (!form.website_url.trim()) return
+    setGenerating(true)
+    setGenerateError('')
+    try {
+      const res = await fetch('/api/accounts/generate-knowledge-base', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ website_url: form.website_url.trim() }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error)
+      update('manual_content', json.knowledge_base)
+    } catch (e) {
+      setGenerateError(e instanceof Error ? e.message : 'Generation failed')
+    } finally {
+      setGenerating(false)
+    }
+  }
 
   // Load existing data
   useEffect(() => {
@@ -437,16 +459,39 @@ export default function EditAccountPage() {
 
           <SectionHeader title="Knowledge base" subtitle="What Alex knows about this business" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Field label="Website URL" hint="We'll pull services, hours, and FAQs automatically">
+            <Field label="Website URL" hint="Paste the business website — then click Generate to build the knowledge base">
               <input
                 style={inputStyle}
                 placeholder="https://www.example.com"
                 value={form.website_url}
                 onChange={(e) => update('website_url', e.target.value)}
               />
+              <button
+                type="button"
+                onClick={generateKnowledgeBase}
+                disabled={!form.website_url.trim() || generating}
+                style={{
+                  marginTop: 8,
+                  padding: '7px 16px',
+                  fontFamily: "'Hanken Grotesk', sans-serif",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  borderRadius: 'var(--radius-control)',
+                  border: 'none',
+                  cursor: !form.website_url.trim() || generating ? 'not-allowed' : 'pointer',
+                  backgroundColor: !form.website_url.trim() || generating ? 'var(--color-surface-sunken)' : 'var(--color-accent)',
+                  color: !form.website_url.trim() || generating ? 'var(--color-text-muted)' : '#fff',
+                  transition: 'background-color 0.15s',
+                }}
+              >
+                {generating ? '⏳ Generating…' : '✦ Generate knowledge base'}
+              </button>
+              {generateError && (
+                <p style={{ ...hintStyle, color: 'var(--color-accent-text)', marginTop: 6 }}>{generateError}</p>
+              )}
             </Field>
 
-            <Field label="Google Maps URL" hint="We'll pull reviews, hours, and business details">
+            <Field label="Google Maps URL">
               <input
                 style={inputStyle}
                 placeholder="https://maps.google.com/..."
