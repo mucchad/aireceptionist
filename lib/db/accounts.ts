@@ -66,10 +66,9 @@ export async function getAccounts(): Promise<Account[]> {
   const { data, error } = await supabase
     .from('accounts')
     .select('*')
-    .order('created_at', { ascending: false })
 
   if (error) throw new Error(`Failed to fetch accounts: ${error.message}`)
-  return data ?? []
+  return (data ?? []).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 }
 
 // Get a single account by ID
