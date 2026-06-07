@@ -55,7 +55,7 @@ export async function GET(
       accountName: account.name,
       leads,
       counts,
-      _debug: { accountId: account.id, directLeads: leadsData, directError: leadsError },
+      _debug: { accountId: account.id, directLeads: leadsData, directError: leadsError, supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL },
     })
   } catch (error) {
     console.error('Dashboard load error:', error)
