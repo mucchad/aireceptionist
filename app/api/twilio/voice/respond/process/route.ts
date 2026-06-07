@@ -24,7 +24,6 @@ export async function POST(request: Request) {
     const to           = searchParams.get('to')        as string
     const from         = searchParams.get('from')      as string
     const speechResult = searchParams.get('speech')    as string
-    const isWrapUp     = searchParams.get('wrap') === '1'
 
     console.log(`[voice/process] callSid=${callSid} to=${to} from=${from} speech="${speechResult}"`)
 
@@ -103,22 +102,17 @@ export async function POST(request: Request) {
     }
 
     const respondUrl = `${PRODUCTION_URL}/api/twilio/voice/respond?callSid=${callSid}&to=${encodeURIComponent(to)}`
-    const wrapUrl    = `${PRODUCTION_URL}/api/twilio/voice/respond?callSid=${callSid}&to=${encodeURIComponent(to)}&wrap=1`
 
     let twiml: string
-    if (isWrapUp) {
-      // Customer has responded after "anything else?" — say goodbye and hang up
-      twiml = buildVoiceTwiml(message, undefined, true)
-    } else if (leadCaptured) {
-      // Lead just captured — always append the "anything else?" question regardless
-      // of what Claude said, so the call never ends abruptly
-      const withFollowUp = `${message} Is there anything else I can help you with?`
-      twiml = buildVoiceTwiml(withFollowUp, wrapUrl)
+    if (leadCaptured) {
+      // Hardcoded closing — never let Claude improvise the goodbye
+      const closing = `Let me log this. Someone from ${account.name} will be in touch with you shortly. Thank you!`
+      twiml = buildVoiceTwiml(closing, undefined, true)
     } else {
       twiml = buildVoiceTwiml(message, respondUrl)
     }
 
-    console.log(`[voice/process] Responding — isWrapUp=${isWrapUp} leadCaptured=${leadCaptured}`)
+    console.log(`[voice/process] Responding — leadCaptured=${leadCaptured}`)
     return new NextResponse(twiml, { headers: { 'Content-Type': 'text/xml' } })
   } catch (error) {
     console.error('[voice/process] Unhandled error:', error)
