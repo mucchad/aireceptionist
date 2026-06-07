@@ -9,7 +9,7 @@ export async function GET() {
 
   try {
     const supabase = createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-    const { data, error } = await supabase.from('accounts').select('id, name')
+    const { data, error } = await supabase.from('accounts').select('*').order('created_at', { ascending: false })
     return NextResponse.json({ url, keyPrefix, count: data?.length ?? 0, accounts: data, error: error?.message })
   } catch (e) {
     return NextResponse.json({ url, keyPrefix, error: String(e) })
