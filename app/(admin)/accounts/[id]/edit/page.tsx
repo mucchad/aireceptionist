@@ -424,7 +424,7 @@ export default function EditAccountPage() {
         <div>
           {/* Twilio phone number */}
           <div style={{ marginBottom: 28, paddingBottom: 28, borderBottom: '1px solid var(--color-border)' }}>
-            <SectionHeader title="Phone number" subtitle="The Twilio number assigned to this account" />
+            <SectionHeader title="Twilio Phone Number" subtitle="The Twilio number assigned to this account" />
             <Field label="Twilio number" hint="Format: +14085551234 — buy the number in Twilio, paste it here">
               <input
                 style={inputStyle}
