@@ -3,7 +3,7 @@
 // Leads table — shown on the owner dashboard
 // Displays each lead with customer info, job description, channel, time, and status
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { Avatar } from '@/components/ui/avatar'
 import type { Lead, LeadStatus } from '@/types'
 
@@ -23,119 +23,89 @@ function SwipeableLeadRow({
   className?: string
 }) {
   const [offset, setOffset] = useState(0)
+  const [animating, setAnimating] = useState(false)
   const [dismissed, setDismissed] = useState(false)
-  const outerRef = useRef<HTMLDivElement>(null)
-  const innerRef = useRef<HTMLDivElement>(null)
-  // Keep callback in a ref so the effect never needs to re-run
-  const onContactedRef = useRef(onContacted)
-  useEffect(() => { onContactedRef.current = onContacted }, [onContacted])
-
-  useEffect(() => {
-    const inner: HTMLDivElement | null = innerRef.current
-    const outer: HTMLDivElement | null = outerRef.current
-    if (!inner || !outer || !canSwipe) return
-    const innerEl = inner
-    const outerEl = outer
-
-    let startX = 0
-    let startY = 0
-    let isHorizontal: boolean | null = null
-    let live = false
-
-    function onTouchStart(e: TouchEvent) {
-      startX = e.touches[0].clientX
-      startY = e.touches[0].clientY
-      isHorizontal = null
-      live = false
-    }
-
-    function onTouchMove(e: TouchEvent) {
-      const dx = startX - e.touches[0].clientX
-      const dy = e.touches[0].clientY - startY
-
-      // Determine direction on first meaningful movement
-      if (isHorizontal === null) {
-        if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return
-        isHorizontal = Math.abs(dx) > Math.abs(dy)
-      }
-      if (!isHorizontal) return
-
-      e.preventDefault()
-      live = true
-
-      const clamped = Math.max(0, Math.min(dx, outerEl.offsetWidth * 0.8))
-      innerEl.style.transition = 'none'
-      innerEl.style.transform = `translateX(-${clamped}px)`
-      setOffset(clamped)
-    }
-
-    function onTouchEnd() {
-      if (!live) return
-      const width = outerEl.offsetWidth
-      const currentDx = parseFloat(innerEl.style.transform.replace('translateX(-', '').replace('px)', '') || '0')
-
-      if (currentDx >= width * SWIPE_THRESHOLD) {
-        innerEl.style.transition = 'transform 0.22s ease'
-        innerEl.style.transform = `translateX(-${width}px)`
-        setTimeout(() => {
-          setDismissed(true)
-          onContactedRef.current()
-        }, 230)
-      } else {
-        innerEl.style.transition = 'transform 0.28s ease'
-        innerEl.style.transform = 'translateX(0)'
-        setOffset(0)
-      }
-      live = false
-    }
-
-    innerEl.addEventListener('touchstart', onTouchStart, { passive: true })
-    innerEl.addEventListener('touchmove', onTouchMove, { passive: false })
-    innerEl.addEventListener('touchend', onTouchEnd, { passive: true })
-    return () => {
-      innerEl.removeEventListener('touchstart', onTouchStart)
-      innerEl.removeEventListener('touchmove', onTouchMove)
-      innerEl.removeEventListener('touchend', onTouchEnd)
-    }
-  }, [canSwipe]) // stable — callback handled via ref
+  const startX = useRef(0)
+  const startY = useRef(0)
+  const tracking = useRef(false)
+  const rowWidth = useRef(0)
 
   if (dismissed) return null
 
+  function onTouchStart(e: React.TouchEvent) {
+    if (!canSwipe) return
+    startX.current = e.touches[0].clientX
+    startY.current = e.touches[0].clientY
+    tracking.current = false
+    rowWidth.current = (e.currentTarget as HTMLElement).offsetWidth
+  }
+
+  function onTouchMove(e: React.TouchEvent) {
+    if (!canSwipe) return
+    const dx = startX.current - e.touches[0].clientX
+    const dy = Math.abs(e.touches[0].clientY - startY.current)
+    // ignore vertical scroll
+    if (!tracking.current && dy > Math.abs(dx)) return
+    tracking.current = true
+    const clamped = Math.max(0, dx)
+    setOffset(clamped)
+    setAnimating(false)
+  }
+
+  function onTouchEnd() {
+    if (!canSwipe || !tracking.current) return
+    tracking.current = false
+    const threshold = rowWidth.current * SWIPE_THRESHOLD
+    if (offset >= threshold) {
+      setAnimating(true)
+      setOffset(rowWidth.current)
+      setTimeout(() => {
+        setDismissed(true)
+        onContacted()
+      }, 250)
+    } else {
+      setAnimating(true)
+      setOffset(0)
+    }
+  }
+
   return (
     <div
-      ref={outerRef}
       style={{ position: 'relative', overflow: 'hidden', ...style }}
       className={className}
     >
       {/* Green action background */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          backgroundColor: 'var(--color-live)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'flex-end',
-          paddingRight: 24,
-          opacity: Math.min(offset / 60, 1),
-          transition: 'opacity 0.1s',
-        }}
-      >
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        backgroundColor: 'var(--color-live)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        paddingRight: 24,
+        opacity: Math.min(offset / 80, 1),
+      }}>
         <span style={{
           fontFamily: "'Hanken Grotesk', sans-serif",
-          fontSize: 13,
+          fontSize: 14,
           fontWeight: 700,
           color: '#ffffff',
-          letterSpacing: '0.02em',
         }}>
           ✓ Contacted
         </span>
       </div>
 
-      {/* Row content — slides left */}
+      {/* Sliding row */}
       <div
-        ref={innerRef}
-        style={{ backgroundColor: 'var(--color-surface)', willChange: 'transform' }}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        style={{
+          transform: `translateX(-${offset}px)`,
+          transition: animating ? 'transform 0.25s ease' : 'none',
+          backgroundColor: 'var(--color-surface)',
+          touchAction: 'pan-y',
+        }}
       >
         {children}
       </div>
