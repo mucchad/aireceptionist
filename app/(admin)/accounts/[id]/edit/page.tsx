@@ -299,6 +299,7 @@ export default function EditAccountPage() {
       </div>
 
       <div
+        className="edit-account-grid"
         style={{
           backgroundColor: 'var(--color-surface)',
           border: '1px solid var(--color-border)',
@@ -306,7 +307,7 @@ export default function EditAccountPage() {
           boxShadow: 'var(--shadow-card)',
           padding: '28px 32px',
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
           gap: '32px 48px',
         }}
       >
