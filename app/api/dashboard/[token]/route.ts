@@ -34,7 +34,18 @@ export async function GET(
       return NextResponse.json({ error: 'Dashboard not found' }, { status: 404 })
     }
 
-    // Fetch leads and counts for this account
+    // Fetch leads directly inline for debugging
+    const supabase2 = getSupabase()
+    const { data: leadsData, error: leadsError } = await supabase2
+      .from('leads')
+      .select('*')
+      .eq('account_id', account.id)
+      .order('created_at', { ascending: false })
+
+    console.log('DEBUG account.id:', account.id)
+    console.log('DEBUG leadsError:', leadsError)
+    console.log('DEBUG leadsData:', leadsData)
+
     const [leads, counts] = await Promise.all([
       getLeads(account.id),
       getLeadCounts(account.id),
@@ -44,6 +55,7 @@ export async function GET(
       accountName: account.name,
       leads,
       counts,
+      _debug: { accountId: account.id, directLeads: leadsData, directError: leadsError },
     })
   } catch (error) {
     console.error('Dashboard load error:', error)
