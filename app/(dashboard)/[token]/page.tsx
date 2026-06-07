@@ -128,9 +128,9 @@ export default function OwnerDashboardPage() {
 
   const tabCounts: Record<Filter, number> = {
     all:       data.leads.length,
-    new:       data.counts.byStatus.new,
-    contacted: data.counts.byStatus.contacted,
-    resolved:  data.counts.byStatus.resolved,
+    new:       data.leads.filter((l) => l.status === 'new').length,
+    contacted: data.leads.filter((l) => l.status === 'contacted').length,
+    resolved:  data.leads.filter((l) => l.status === 'resolved').length,
   }
 
   // ── Dashboard ────────────────────────────────────────────────
