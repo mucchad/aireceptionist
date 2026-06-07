@@ -4,6 +4,7 @@
 // Fetches real data from Supabase, rows link to each account's owner dashboard
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Avatar } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import type { Account } from '@/types'
@@ -21,6 +22,7 @@ interface AccountsTableProps {
 }
 
 export function AccountsTable({ filter }: AccountsTableProps) {
+  const router = useRouter()
   const [accounts, setAccounts] = useState<Account[]>([])
   const [leadCounts, setLeadCounts] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
@@ -92,7 +94,7 @@ export function AccountsTable({ filter }: AccountsTableProps) {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(0,1.7fr) 120px 172px 150px 96px 22px',
+          gridTemplateColumns: 'minmax(0,1.7fr) 120px 172px 150px 96px 64px',
           alignItems: 'center',
           height: 42,
           padding: '0 20px',
@@ -143,7 +145,7 @@ export function AccountsTable({ filter }: AccountsTableProps) {
           title="Open owner dashboard"
           style={{
             display: 'grid',
-            gridTemplateColumns: 'minmax(0,1.7fr) 120px 172px 150px 96px 22px',
+            gridTemplateColumns: 'minmax(0,1.7fr) 120px 172px 150px 96px 64px',
             alignItems: 'center',
             height: 64,
             padding: '0 20px',
@@ -230,15 +232,29 @@ export function AccountsTable({ filter }: AccountsTableProps) {
             {leadCounts[account.id] ?? 0}
           </div>
 
-          {/* Chevron */}
-          <div
-            style={{
-              color: 'var(--color-text-muted)',
-              fontSize: 15,
-              textAlign: 'right',
-            }}
-          >
-            ›
+          {/* Edit button */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              onClick={(e) => {
+                // Stop the row click from opening the owner dashboard
+                e.stopPropagation()
+                router.push(`/accounts/${account.id}/edit`)
+              }}
+              style={{
+                height: 28,
+                padding: '0 10px',
+                borderRadius: 'var(--radius-control)',
+                backgroundColor: 'var(--color-surface-sunken)',
+                border: '1px solid var(--color-border)',
+                fontFamily: "'Hanken Grotesk', sans-serif",
+                fontSize: 12,
+                fontWeight: 600,
+                color: 'var(--color-text-secondary)',
+                cursor: 'pointer',
+              }}
+            >
+              Edit
+            </button>
           </div>
         </div>
       ))}
