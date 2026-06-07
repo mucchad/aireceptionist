@@ -4,6 +4,7 @@
 // Shows all soft-deleted accounts with restore and permanent-delete options
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Account } from '@/types'
 
 function formatDate(iso: string) {
@@ -15,6 +16,7 @@ function formatDate(iso: string) {
 }
 
 export default function DeletedAccountsPage() {
+  const router = useRouter()
   const [accounts, setAccounts] = useState<Account[]>([])
   const [loading, setLoading] = useState(true)
   const [restoringId, setRestoringId] = useState<string | null>(null)
@@ -42,6 +44,8 @@ export default function DeletedAccountsPage() {
       if (!res.ok) throw new Error('Restore failed')
       // Optimistically remove from the deleted list
       setAccounts((prev) => prev.filter((a) => a.id !== id))
+      // Clear Next.js router cache so Accounts page shows restored account immediately
+      router.refresh()
     } catch {
       alert('Failed to restore account. Please try again.')
     } finally {

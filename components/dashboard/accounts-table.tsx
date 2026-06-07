@@ -64,8 +64,13 @@ export function AccountsTable({ filter }: AccountsTableProps) {
   async function deleteAccount(id: string) {
     setDeleting(true)
     try {
-      await fetch(`/api/accounts/${id}/delete`, { method: 'PATCH' })
+      const res = await fetch(`/api/accounts/${id}/delete`, { method: 'PATCH' })
+      if (!res.ok) throw new Error('Delete failed')
       setAccounts((prev) => prev.filter((a) => a.id !== id))
+      // Clear Next.js router cache so Deleted page fetches fresh data on next visit
+      router.refresh()
+    } catch {
+      alert('Failed to delete account. Please try again.')
     } finally {
       setDeleting(false)
       setConfirmDeleteId(null)
