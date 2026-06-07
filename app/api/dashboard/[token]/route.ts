@@ -24,12 +24,14 @@ export async function GET(
     const { token } = params
 
     // Look up the account by its secret dashboard token
+    // Note: we select * and filter in JS — Supabase PostgREST schema cache
+    // can lag after ALTER TABLE, causing newly-added columns to return null
     const supabase = getSupabase()
-    const { data: account, error } = await supabase
+    const { data: accounts, error } = await supabase
       .from('accounts')
-      .select('id, name, status, logo_url')
-      .eq('dashboard_token', token)
-      .single()
+      .select('*')
+
+    const account = (accounts ?? []).find((a) => a.dashboard_token === token)
 
     if (error || !account) {
       return NextResponse.json({ error: 'Dashboard not found' }, { status: 404 })

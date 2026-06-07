@@ -143,7 +143,7 @@ export default function OwnerDashboardPage() {
               margin: '0 0 4px',
             }}
           >
-            Here's who reached out
+            You didn't miss a single one.
           </h1>
           <p
             style={{
@@ -153,7 +153,7 @@ export default function OwnerDashboardPage() {
               margin: 0,
             }}
           >
-            New messages land here the moment a call or text comes in.
+            These customers reached out and got an answer in under a second — ready for your follow-up.
           </p>
         </div>
 
