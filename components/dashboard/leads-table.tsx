@@ -224,7 +224,17 @@ export function LeadsTable({ leads, filter }: LeadsTableProps) {
                   marginTop: 1,
                 }}
               >
-                {lead.customer_phone}
+                {lead.customer_phone ? (
+                  <a
+                    href={`tel:${lead.customer_phone}`}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ color: 'inherit', textDecoration: 'none' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-accent-text)'; e.currentTarget.style.textDecoration = 'underline' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = 'inherit'; e.currentTarget.style.textDecoration = 'none' }}
+                  >
+                    {lead.customer_phone}
+                  </a>
+                ) : null}
               </div>
             </div>
           </div>
