@@ -5,7 +5,7 @@
 import { NextResponse } from 'next/server'
 import { getAccountByPhone } from '@/lib/twilio/client'
 import { buildVoiceTwiml } from '@/lib/twilio/client'
-import { getOrCreateConversation } from '@/lib/db/conversations'
+import { getOrCreateConversation, appendMessage } from '@/lib/db/conversations'
 
 const PRODUCTION_URL = process.env.NEXT_PUBLIC_PRODUCTION_URL
 
@@ -30,6 +30,14 @@ export async function POST(request: Request) {
     console.log(`[voice] Conversation created: ${conversation.id}`)
 
     const greeting = `Hi there! Thanks for calling ${account.name}. I'm ${account.persona_name}, how can I help you today?`
+
+    // Save greeting to conversation history so Alex knows it was already said
+    await appendMessage(conversation.id, {
+      role: 'assistant',
+      content: greeting,
+      timestamp: new Date().toISOString(),
+    })
+
     const respondUrl = `${PRODUCTION_URL}/api/twilio/voice/respond?callSid=${callSid}&to=${encodeURIComponent(to)}`
     const twiml = buildVoiceTwiml(greeting, respondUrl)
 

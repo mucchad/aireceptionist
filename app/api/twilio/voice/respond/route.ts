@@ -31,13 +31,14 @@ export async function POST(request: Request) {
 
     // Immediately return a filler phrase and redirect to /process
     // Twilio speaks the filler while simultaneously hitting /process — hiding Claude's latency
+    const wrap = searchParams.get('wrap') ?? '0'
     const processUrl =
       `${PRODUCTION_URL}/api/twilio/voice/respond/process` +
-      `?callSid=${callSid}&to=${encodeURIComponent(to)}&from=${encodeURIComponent(from)}&speech=${encodeURIComponent(speechResult)}`
+      `?callSid=${callSid}&to=${encodeURIComponent(to)}&from=${encodeURIComponent(from)}&speech=${encodeURIComponent(speechResult)}&wrap=${wrap}`
 
     const VoiceResponse = (await import('twilio')).default.twiml.VoiceResponse
     const twiml = new VoiceResponse()
-    twiml.say({ voice: 'Polly.Joanna-Neural', language: 'en-US' }, 'One moment.')
+    twiml.say({ voice: 'Polly.Joanna-Neural', language: 'en-US' }, 'Sure, one moment.')
     twiml.redirect({ method: 'POST' }, processUrl)
 
     console.log(`[voice/respond] Filler sent, redirecting to process`)

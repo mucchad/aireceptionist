@@ -24,6 +24,7 @@ export async function POST(request: Request) {
     const to           = searchParams.get('to')        as string
     const from         = searchParams.get('from')      as string
     const speechResult = searchParams.get('speech')    as string
+    const isWrapUp     = searchParams.get('wrap') === '1'
 
     console.log(`[voice/process] callSid=${callSid} to=${to} from=${from} speech="${speechResult}"`)
 
@@ -102,11 +103,20 @@ export async function POST(request: Request) {
     }
 
     const respondUrl = `${PRODUCTION_URL}/api/twilio/voice/respond?callSid=${callSid}&to=${encodeURIComponent(to)}`
-    const twiml = leadCaptured
-      ? buildVoiceTwiml(message, undefined, true)
-      : buildVoiceTwiml(message, respondUrl)
+    const wrapUrl    = `${PRODUCTION_URL}/api/twilio/voice/respond?callSid=${callSid}&to=${encodeURIComponent(to)}&wrap=1`
 
-    console.log(`[voice/process] Responding — hangup=${leadCaptured}`)
+    let twiml: string
+    if (isWrapUp) {
+      // Customer has responded after "anything else?" — say goodbye and hang up
+      twiml = buildVoiceTwiml(message, undefined, true)
+    } else if (leadCaptured) {
+      // Lead just captured — keep call open so Alex can ask "anything else?"
+      twiml = buildVoiceTwiml(message, wrapUrl)
+    } else {
+      twiml = buildVoiceTwiml(message, respondUrl)
+    }
+
+    console.log(`[voice/process] Responding — isWrapUp=${isWrapUp} leadCaptured=${leadCaptured}`)
     return new NextResponse(twiml, { headers: { 'Content-Type': 'text/xml' } })
   } catch (error) {
     console.error('[voice/process] Unhandled error:', error)
