@@ -297,7 +297,7 @@ export default function NewAccountPage() {
           </button>
 
           <button
-            onClick={() => router.push('/')}
+            onClick={() => { router.push('/'); router.refresh() }}
             style={{
               width: '100%',
               height: 42,
