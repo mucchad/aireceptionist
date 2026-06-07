@@ -16,13 +16,10 @@ export function OwnerTopBar({ businessName }: OwnerTopBarProps) {
 
   return (
     <header
+      className="owner-topbar"
       style={{
-        height: 60,
         backgroundColor: 'var(--color-surface)',
         borderBottom: '1px solid var(--color-border)',
-        padding: '0 28px',
-        display: 'flex',
-        alignItems: 'center',
         gap: 18,
         position: 'sticky',
         top: 0,

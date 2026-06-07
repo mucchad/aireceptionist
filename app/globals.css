@@ -118,3 +118,94 @@ body {
     animation: none;
   }
 }
+
+/* ============================================================
+   Owner Dashboard — Mobile responsive (Safari/Chrome)
+   ============================================================ */
+
+/* Stat cards: 4-across on desktop, 2x2 on mobile */
+.owner-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+/* Leads table: full grid on desktop */
+.leads-table-header,
+.leads-table-row {
+  display: grid;
+  grid-template-columns: 200px minmax(0,1.7fr) 100px 100px 140px;
+  align-items: center;
+  padding: 0 20px;
+}
+.leads-table-header { height: 42px; border-bottom: 1px solid var(--color-border); }
+.leads-table-row    { min-height: 64px; padding-top: 12px; padding-bottom: 12px; }
+
+/* Hide Channel and When columns on mobile — show card layout instead */
+.leads-col-channel,
+.leads-col-when,
+.leads-header-channel,
+.leads-header-when { display: block; }
+
+.leads-card-meta { display: none; }
+
+/* Dashboard padding */
+.owner-dashboard-body { padding: 26px 28px 28px; }
+
+/* Top bar */
+.owner-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 56px;
+}
+
+@media (max-width: 768px) {
+  /* Stat cards: 2x2 grid on mobile */
+  .owner-stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  /* Dashboard padding tighter on mobile */
+  .owner-dashboard-body {
+    padding: 16px 16px 28px;
+  }
+
+  /* Top bar tighter */
+  .owner-topbar {
+    padding: 0 16px;
+    height: 52px;
+  }
+
+  /* Leads table: switch to card layout on mobile */
+  .leads-table-header { display: none; }
+
+  .leads-table-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 14px 16px;
+    min-height: unset;
+  }
+
+  /* Hide individual columns — card layout handles it */
+  .leads-col-channel,
+  .leads-col-when { display: none; }
+
+  /* Show the compact meta row (channel + time + status) */
+  .leads-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* Job description full width */
+  .leads-col-job {
+    font-size: 13px !important;
+  }
+}

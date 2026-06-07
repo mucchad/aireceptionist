@@ -153,17 +153,8 @@ export function LeadsTable({ leads, filter }: LeadsTableProps) {
         overflow: 'hidden',
       }}
     >
-      {/* Table header */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '210px minmax(0,1.7fr) 116px 116px 150px',
-          alignItems: 'center',
-          height: 42,
-          padding: '0 20px',
-          borderBottom: '1px solid var(--color-border)',
-        }}
-      >
+      {/* Table header — hidden on mobile */}
+      <div className="leads-table-header">
         {['Customer', 'What they need', 'Channel', 'When', 'Status'].map((col) => (
           <span
             key={col}
@@ -205,13 +196,8 @@ export function LeadsTable({ leads, filter }: LeadsTableProps) {
       {filtered.map((lead, index) => (
         <div
           key={lead.id}
-          className="lead-row-enter"
+          className="lead-row-enter leads-table-row"
           style={{
-            display: 'grid',
-            gridTemplateColumns: '210px minmax(0,1.7fr) 116px 116px 150px',
-            alignItems: 'center',
-            minHeight: 64,
-            padding: '10px 20px',
             borderBottom:
               index < filtered.length - 1 ? '1px solid var(--color-border-soft)' : 'none',
           }}
@@ -245,6 +231,7 @@ export function LeadsTable({ leads, filter }: LeadsTableProps) {
 
           {/* Job description */}
           <div
+            className="leads-col-job"
             style={{
               fontFamily: "'Hanken Grotesk', sans-serif",
               fontSize: 14,
@@ -260,13 +247,14 @@ export function LeadsTable({ leads, filter }: LeadsTableProps) {
             {lead.job_description || '—'}
           </div>
 
-          {/* Channel chip */}
-          <div>
+          {/* Channel chip — hidden on mobile, shown in card meta */}
+          <div className="leads-col-channel">
             <ChannelChip channel={lead.channel} />
           </div>
 
-          {/* When */}
+          {/* When — hidden on mobile, shown in card meta */}
           <div
+            className="leads-col-when"
             style={{
               fontFamily: "'Hanken Grotesk', sans-serif",
               fontSize: 13,
@@ -279,6 +267,14 @@ export function LeadsTable({ leads, filter }: LeadsTableProps) {
           {/* Status selector */}
           <div>
             <StatusSelector leadId={lead.id} initial={lead.status} />
+          </div>
+
+          {/* Mobile-only meta row: channel + time + status together */}
+          <div className="leads-card-meta">
+            <ChannelChip channel={lead.channel} />
+            <span style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: 12, color: 'var(--color-text-muted)' }}>
+              {formatWhen(lead.created_at)}
+            </span>
           </div>
         </div>
       ))}

@@ -128,7 +128,7 @@ export default function OwnerDashboardPage() {
     <div style={{ minHeight: '100vh', backgroundColor: 'var(--color-bg)' }}>
       <OwnerTopBar businessName={data.accountName} />
 
-      <div style={{ padding: '26px 28px 28px' }}>
+      <div className="owner-dashboard-body">
 
         {/* Page header */}
         <div style={{ marginBottom: 18 }}>
@@ -156,15 +156,8 @@ export default function OwnerDashboardPage() {
           </p>
         </div>
 
-        {/* Stat grid — 4 cards */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: 14,
-            marginBottom: 18,
-          }}
-        >
+        {/* Stat grid — 4 cards, 2x2 on mobile */}
+        <div className="owner-stat-grid">
           <StatCard
             label="New today"
             value={String(data.counts.today)}
