@@ -72,6 +72,7 @@ export interface Lead {
   channel: LeadChannel
   status: LeadStatus
   created_at: string
+  transcript?: ConversationMessage[]
 }
 
 // ------------------------------------------------------------

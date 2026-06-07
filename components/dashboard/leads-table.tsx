@@ -5,7 +5,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Avatar } from '@/components/ui/avatar'
-import type { Lead, LeadStatus } from '@/types'
+import type { ConversationMessage, Lead, LeadStatus } from '@/types'
 
 const SWIPE_THRESHOLD = 0.38 // 38% of row width triggers confirm
 
@@ -236,6 +236,76 @@ function formatWhen(iso: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
+function TranscriptPanel({ messages }: { messages: ConversationMessage[] }) {
+  if (!messages || messages.length === 0) {
+    return (
+      <div style={{
+        padding: '12px 16px',
+        fontFamily: "'Hanken Grotesk', sans-serif",
+        fontSize: 13,
+        color: 'var(--color-text-muted)',
+        backgroundColor: 'var(--color-surface-sunken)',
+        borderTop: '1px solid var(--color-border-soft)',
+      }}>
+        No transcript available.
+      </div>
+    )
+  }
+
+  return (
+    <div style={{
+      backgroundColor: 'var(--color-surface-sunken)',
+      borderTop: '1px solid var(--color-border-soft)',
+      padding: '16px 20px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 10,
+    }}>
+      {messages.map((msg, i) => {
+        const isAlex = msg.role === 'assistant'
+        return (
+          <div key={i} style={{
+            display: 'flex',
+            flexDirection: isAlex ? 'row' : 'row-reverse',
+            gap: 8,
+            alignItems: 'flex-start',
+          }}>
+            <div style={{
+              flexShrink: 0,
+              width: 26,
+              height: 26,
+              borderRadius: '50%',
+              backgroundColor: isAlex ? 'var(--color-accent-weak)' : 'var(--color-border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 11,
+              fontWeight: 700,
+              fontFamily: "'Hanken Grotesk', sans-serif",
+              color: isAlex ? 'var(--color-accent-text)' : 'var(--color-text-muted)',
+            }}>
+              {isAlex ? 'A' : 'C'}
+            </div>
+            <div style={{
+              maxWidth: '72%',
+              backgroundColor: isAlex ? 'var(--color-surface)' : 'var(--color-accent-weak)',
+              border: '1px solid var(--color-border-soft)',
+              borderRadius: isAlex ? '4px 12px 12px 12px' : '12px 4px 12px 12px',
+              padding: '8px 12px',
+              fontFamily: "'Hanken Grotesk', sans-serif",
+              fontSize: 13,
+              lineHeight: 1.5,
+              color: 'var(--color-text-secondary)',
+            }}>
+              {msg.content}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 interface LeadsTableProps {
   leads: Lead[]
   filter: 'all' | LeadStatus
@@ -244,6 +314,7 @@ interface LeadsTableProps {
 
 export function LeadsTable({ leads, filter, onStatusChange }: LeadsTableProps) {
   const filtered = leads.filter((l) => filter === 'all' || l.status === filter)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   return (
     <div
@@ -389,8 +460,27 @@ export function LeadsTable({ leads, filter, onStatusChange }: LeadsTableProps) {
           </div>
 
           {/* Status selector */}
-          <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <StatusSelector leadId={lead.id} initial={lead.status} onStatusChange={onStatusChange} />
+            {lead.transcript && lead.transcript.length > 0 && (
+              <button
+                onClick={() => setExpandedId(expandedId === lead.id ? null : lead.id)}
+                style={{
+                  fontFamily: "'Hanken Grotesk', sans-serif",
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  color: 'var(--color-text-muted)',
+                  background: 'none',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-pill)',
+                  padding: '3px 9px',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {expandedId === lead.id ? 'Hide transcript' : 'View transcript'}
+              </button>
+            )}
           </div>
 
           {/* Mobile-only meta row: channel + time + status together */}
@@ -399,8 +489,27 @@ export function LeadsTable({ leads, filter, onStatusChange }: LeadsTableProps) {
             <span style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: 12, color: 'var(--color-text-muted)' }}>
               {formatWhen(lead.created_at)}
             </span>
+            {lead.transcript && lead.transcript.length > 0 && (
+              <button
+                onClick={() => setExpandedId(expandedId === lead.id ? null : lead.id)}
+                style={{
+                  fontFamily: "'Hanken Grotesk', sans-serif",
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  color: 'var(--color-text-muted)',
+                  background: 'none',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-pill)',
+                  padding: '3px 9px',
+                  cursor: 'pointer',
+                }}
+              >
+                {expandedId === lead.id ? 'Hide' : 'Transcript'}
+              </button>
+            )}
           </div>
         </div>
+        {expandedId === lead.id && <TranscriptPanel messages={lead.transcript ?? []} />}
         </SwipeableLeadRow>
       ))}
     </div>

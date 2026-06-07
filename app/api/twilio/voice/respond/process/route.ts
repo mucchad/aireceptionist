@@ -110,8 +110,10 @@ export async function POST(request: Request) {
       // Customer has responded after "anything else?" — say goodbye and hang up
       twiml = buildVoiceTwiml(message, undefined, true)
     } else if (leadCaptured) {
-      // Lead just captured — keep call open so Alex can ask "anything else?"
-      twiml = buildVoiceTwiml(message, wrapUrl)
+      // Lead just captured — always append the "anything else?" question regardless
+      // of what Claude said, so the call never ends abruptly
+      const withFollowUp = `${message} Is there anything else I can help you with?`
+      twiml = buildVoiceTwiml(withFollowUp, wrapUrl)
     } else {
       twiml = buildVoiceTwiml(message, respondUrl)
     }

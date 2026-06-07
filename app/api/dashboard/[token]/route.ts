@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { getLeads } from '@/lib/db/leads'
+import type { ConversationMessage } from '@/types'
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -36,16 +37,30 @@ export async function GET(
       return NextResponse.json({ error: 'Dashboard not found' }, { status: 404 })
     }
 
-    // Fetch leads — derive all counts from this single source of truth
-    const leads = await getLeads(account.id)
+    const dbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const dbKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-    // Fetch conversation counts with explicit columns to avoid schema cache issues
-    const supabaseClient = getSupabase()
-    const { data: convRows } = await supabaseClient
-      .from('conversations')
-      .select('id, account_id, channel')
+    // Fetch leads and conversations in parallel — both via direct REST fetch
+    const [leadsRaw, convRes] = await Promise.all([
+      getLeads(account.id),
+      fetch(
+        `${dbUrl}/rest/v1/conversations?account_id=eq.${account.id}&select=lead_id,messages,channel`,
+        { headers: { apikey: dbKey, Authorization: `Bearer ${dbKey}` }, cache: 'no-store' }
+      ),
+    ])
 
-    const convs = (convRows ?? []).filter((c) => c.account_id === account.id)
+    const convRows: { lead_id: string | null; messages: ConversationMessage[]; channel: string }[] =
+      convRes.ok ? await convRes.json() : []
+
+    // Build a map from lead_id → transcript messages for O(1) lookup
+    const transcriptByLead = new Map(
+      convRows.filter((c) => c.lead_id).map((c) => [c.lead_id!, c.messages])
+    )
+
+    const leads = leadsRaw.map((l) => ({
+      ...l,
+      transcript: transcriptByLead.get(l.id) ?? [],
+    }))
 
     // Compute all counts from the leads array — never trust a separate query
     const now = new Date()
@@ -65,9 +80,9 @@ export async function GET(
     }
 
     const conversations = {
-      total: convs.length,
-      calls: convs.filter((c) => c.channel === 'call').length,
-      sms:   convs.filter((c) => c.channel === 'sms').length,
+      total: convRows.length,
+      calls: convRows.filter((c) => c.channel === 'call').length,
+      sms:   convRows.filter((c) => c.channel === 'sms').length,
     }
 
     return NextResponse.json({
