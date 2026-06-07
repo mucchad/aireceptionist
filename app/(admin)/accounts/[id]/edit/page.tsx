@@ -6,28 +6,25 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 
-const KB_TEMPLATE = `## About This Business
-[Brief description of what the business does]
-
-## Services
+const KB_TEMPLATE = `<business_name></business_name>
+<phone></phone>
+<email></email>
+<address></address>
+<license></license>
+<services>
 -
 -
 -
-
-## Service Area
-[Cities, zip codes, or radius]
-
-## Hours
+</services>
+<service_area></service_area>
+<hours>
 Monday – Friday:
 Saturday:
 Sunday:
-
-## FAQs
-Q:
-A:
-
-Q:
-A: `
+</hours>
+<pricing></pricing>
+<credentials></credentials>
+<notes></notes>`
 
 interface FormData {
   name: string

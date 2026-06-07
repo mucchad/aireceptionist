@@ -59,7 +59,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // Ask Claude to extract and structure the knowledge base
+    // Ask Claude to extract and structure the knowledge base using XML tags
     const response = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 1024,
@@ -68,20 +68,25 @@ export async function POST(request: Request) {
           role: 'user',
           content: `You are setting up a knowledge base for an AI phone receptionist for a small service business.
 
-Extract and organize the following information from this website content. Format it clearly with labels. If a piece of information is not found, write "[not listed — fill in manually]" for that field.
+Extract information from the website content below and output it using the exact XML structure shown. If a piece of information is not found, write the value as: [not listed — fill in manually]
 
-Extract:
-- BUSINESS NAME
-- PHONE
-- EMAIL
-- ADDRESS
-- LICENSE / CERTIFICATIONS (if any)
-- SERVICES (bulleted list)
-- SERVICE AREA
-- HOURS
-- PRICING (e.g. "free quotes", specific prices, or ranges)
-- CREDENTIALS / AWARDS (BBB, Google rating, etc.)
-- ANYTHING ELSE a receptionist would need to know
+Output this structure and nothing else:
+
+<business_name>[business name]</business_name>
+<phone>[phone number]</phone>
+<email>[email address]</email>
+<address>[full address]</address>
+<license>[license numbers and certifications]</license>
+<services>
+- [service 1]
+- [service 2]
+- [add as many as found]
+</services>
+<service_area>[cities, zip codes, or region served]</service_area>
+<hours>[business hours, including any 24/7 emergency availability]</hours>
+<pricing>[free quotes, price ranges, or specific prices]</pricing>
+<credentials>[BBB, Google rating, awards, affiliations]</credentials>
+<notes>[anything else a receptionist should know — emergency availability, what info to collect from callers, special policies]</notes>
 
 Website content:
 ${plainText}`,
