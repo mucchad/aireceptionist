@@ -12,17 +12,22 @@ function getSupabase() {
 }
 
 // Get all leads for an account, newest first
-// Note: filtering in JS because Supabase .eq() on UUID has an issue in this environment
+// Explicit column list avoids Supabase schema cache issues after ALTER TABLE
 export async function getLeads(accountId: string): Promise<Lead[]> {
   const supabase = getSupabase()
   const { data, error } = await supabase
     .from('leads')
-    .select('*')
+    .select('id, account_id, customer_name, customer_phone, job_description, service_address, channel, status, created_at')
+
+  console.log(`[getLeads] accountId=${accountId} raw rows=${data?.length ?? 0} error=${error?.message ?? 'none'}`)
 
   if (error) throw new Error(`Failed to fetch leads: ${error.message}`)
-  return (data ?? [])
+  const filtered = (data ?? [])
     .filter((l) => l.account_id === accountId)
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
+  console.log(`[getLeads] filtered rows=${filtered.length}`)
+  return filtered
 }
 
 // Update the status of a lead (new → contacted → resolved)
