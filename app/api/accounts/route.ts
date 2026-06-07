@@ -19,10 +19,11 @@ export async function GET() {
     const accounts = await getAccounts()
 
     // Fetch all conversations and count per account
+    // Explicit columns avoid Supabase schema cache issues
     const supabase = getSupabase()
     const { data: convos } = await supabase
       .from('conversations')
-      .select('account_id, channel')
+      .select('id, account_id, channel')
 
     const convoCounts: Record<string, { total: number; calls: number; sms: number }> = {}
     for (const c of convos ?? []) {
