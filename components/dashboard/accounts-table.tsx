@@ -21,10 +21,13 @@ interface AccountsTableProps {
   filter: 'all' | 'live' | 'poc'
 }
 
+interface ConvoCount { total: number; calls: number; sms: number }
+
 export function AccountsTable({ filter }: AccountsTableProps) {
   const router = useRouter()
   const [accounts, setAccounts] = useState<Account[]>([])
   const [leadCounts, setLeadCounts] = useState<Record<string, number>>({})
+  const [convoCounts, setConvoCounts] = useState<Record<string, ConvoCount>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -33,6 +36,7 @@ export function AccountsTable({ filter }: AccountsTableProps) {
         const res = await fetch('/api/accounts')
         const json = await res.json()
         setAccounts(json.accounts ?? [])
+        setConvoCounts(json.convoCounts ?? {})
 
         // Fetch lead counts for each account
         const counts: Record<string, number> = {}
@@ -94,14 +98,14 @@ export function AccountsTable({ filter }: AccountsTableProps) {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(0,1.7fr) 120px 172px 150px 96px 64px',
+          gridTemplateColumns: 'minmax(0,1.7fr) 120px 160px 130px 80px 100px 64px',
           alignItems: 'center',
           height: 42,
           padding: '0 20px',
           borderBottom: '1px solid var(--color-border)',
         }}
       >
-        {['Business', 'Status', 'Phone number', 'Created', 'Leads', ''].map((col) => (
+        {['Business', 'Status', 'Phone number', 'Created', 'Leads', 'Conversations', ''].map((col) => (
           <span
             key={col}
             style={{
@@ -143,7 +147,7 @@ export function AccountsTable({ filter }: AccountsTableProps) {
           title="Edit account"
           style={{
             display: 'grid',
-            gridTemplateColumns: 'minmax(0,1.7fr) 120px 172px 150px 96px 64px',
+            gridTemplateColumns: 'minmax(0,1.7fr) 120px 160px 130px 80px 100px 64px',
             alignItems: 'center',
             height: 64,
             padding: '0 20px',
@@ -228,6 +232,31 @@ export function AccountsTable({ filter }: AccountsTableProps) {
             }}
           >
             {leadCounts[account.id] ?? 0}
+          </div>
+
+          {/* Conversation count */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <span
+              style={{
+                fontFamily: "'Hanken Grotesk', sans-serif",
+                fontSize: 13,
+                fontWeight: 600,
+                color: 'var(--color-text)',
+              }}
+            >
+              {convoCounts[account.id]?.total ?? 0}
+            </span>
+            {(convoCounts[account.id]?.total ?? 0) > 0 && (
+              <span
+                style={{
+                  fontFamily: "'Hanken Grotesk', sans-serif",
+                  fontSize: 11,
+                  color: 'var(--color-text-muted)',
+                }}
+              >
+                📞{convoCounts[account.id]?.calls ?? 0} · 💬{convoCounts[account.id]?.sms ?? 0}
+              </span>
+            )}
           </div>
 
           {/* View leads — opens owner dashboard in new tab */}

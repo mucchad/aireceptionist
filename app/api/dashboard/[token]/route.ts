@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { getLeads, getLeadCounts } from '@/lib/db/leads'
+import { getConversationCount } from '@/lib/db/conversations'
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -34,16 +35,18 @@ export async function GET(
       return NextResponse.json({ error: 'Dashboard not found' }, { status: 404 })
     }
 
-    // Fetch leads and counts for this account
-    const [leads, counts] = await Promise.all([
+    // Fetch leads, counts, and conversation stats in parallel
+    const [leads, counts, conversations] = await Promise.all([
       getLeads(account.id),
       getLeadCounts(account.id),
+      getConversationCount(account.id),
     ])
 
     return NextResponse.json({
       accountName: account.name,
       leads,
       counts,
+      conversations,
     })
   } catch (error) {
     console.error('Dashboard load error:', error)

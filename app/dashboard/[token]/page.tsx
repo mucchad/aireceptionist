@@ -24,6 +24,11 @@ interface DashboardData {
     thisWeek: number
     byStatus: Record<LeadStatus, number>
   }
+  conversations: {
+    total: number
+    calls: number
+    sms: number
+  }
 }
 
 export default function OwnerDashboardPage() {
@@ -151,11 +156,11 @@ export default function OwnerDashboardPage() {
           </p>
         </div>
 
-        {/* Stat grid — 3 cards */}
+        {/* Stat grid — 4 cards */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
+            gridTemplateColumns: 'repeat(4, 1fr)',
             gap: 14,
             marginBottom: 18,
           }}
@@ -169,6 +174,15 @@ export default function OwnerDashboardPage() {
           <StatCard
             label="This week"
             value={String(data.counts.thisWeek)}
+          />
+          <StatCard
+            label="Total conversations"
+            value={String(data.conversations?.total ?? 0)}
+            delta={
+              (data.conversations?.total ?? 0) > 0
+                ? `📞 ${data.conversations?.calls ?? 0} calls · 💬 ${data.conversations?.sms ?? 0} texts`
+                : undefined
+            }
           />
           <StatCard
             label="Avg. first response"

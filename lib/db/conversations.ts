@@ -78,6 +78,23 @@ export async function appendMessage(
   if (error) throw new Error(`Failed to append message: ${error.message}`)
 }
 
+// Get total conversation count for an account (calls + SMS)
+export async function getConversationCount(accountId: string): Promise<{ total: number; calls: number; sms: number }> {
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from('conversations')
+    .select('channel, account_id')
+
+  if (error) throw new Error(`Failed to fetch conversations: ${error.message}`)
+
+  const rows = (data ?? []).filter((c) => c.account_id === accountId)
+  return {
+    total: rows.length,
+    calls: rows.filter((c) => c.channel === 'call').length,
+    sms:   rows.filter((c) => c.channel === 'sms').length,
+  }
+}
+
 // Link a conversation to a lead once captured
 export async function linkConversationToLead(
   conversationId: string,
