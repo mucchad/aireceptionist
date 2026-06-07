@@ -94,10 +94,16 @@ ${plainText}`,
       ],
     })
 
-    const knowledge_base = response.content
+    const raw = response.content
       .filter((b) => b.type === 'text')
       .map((b) => (b as Anthropic.TextBlock).text)
       .join('')
+      .trim()
+
+    // Claude sometimes wraps the output in a ```xml ... ``` code fence — strip it
+    const knowledge_base = raw
+      .replace(/^```[a-z]*\n?/i, '')
+      .replace(/\n?```$/i, '')
       .trim()
 
     return NextResponse.json({ knowledge_base })
