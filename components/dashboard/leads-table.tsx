@@ -23,78 +23,81 @@ function SwipeableLeadRow({
   className?: string
 }) {
   const [offset, setOffset] = useState(0)
-  const [transitioning, setTransitioning] = useState(false)
   const [dismissed, setDismissed] = useState(false)
   const outerRef = useRef<HTMLDivElement>(null)
   const innerRef = useRef<HTMLDivElement>(null)
-  const startX = useRef(0)
-  const startY = useRef(0)
-  const dragging = useRef(false)
-  const currentOffset = useRef(0)
+  // Keep callback in a ref so the effect never needs to re-run
+  const onContactedRef = useRef(onContacted)
+  useEffect(() => { onContactedRef.current = onContacted }, [onContacted])
 
   useEffect(() => {
-    const inner = innerRef.current
-    if (!inner || !canSwipe) return
+    const inner: HTMLDivElement | null = innerRef.current
+    const outer: HTMLDivElement | null = outerRef.current
+    if (!inner || !outer || !canSwipe) return
+    const innerEl = inner
+    const outerEl = outer
+
+    let startX = 0
+    let startY = 0
+    let isHorizontal: boolean | null = null
+    let live = false
 
     function onTouchStart(e: TouchEvent) {
-      startX.current = e.touches[0].clientX
-      startY.current = e.touches[0].clientY
-      dragging.current = false
+      startX = e.touches[0].clientX
+      startY = e.touches[0].clientY
+      isHorizontal = null
+      live = false
     }
 
     function onTouchMove(e: TouchEvent) {
-      const dx = startX.current - e.touches[0].clientX
-      const dy = Math.abs(startY.current - e.touches[0].clientY)
+      const dx = startX - e.touches[0].clientX
+      const dy = e.touches[0].clientY - startY
 
-      // Only take over if clearly horizontal
-      if (!dragging.current && Math.abs(dx) < 6) return
-      if (!dragging.current && dy > Math.abs(dx)) return
-
-      dragging.current = true
-      e.preventDefault()
-
-      const clamped = Math.max(0, Math.min(dx, window.innerWidth * 0.75))
-      currentOffset.current = clamped
-      if (inner) {
-        inner.style.transition = 'none'
-        inner.style.transform = `translateX(-${clamped}px)`
+      // Determine direction on first meaningful movement
+      if (isHorizontal === null) {
+        if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return
+        isHorizontal = Math.abs(dx) > Math.abs(dy)
       }
+      if (!isHorizontal) return
+
+      e.preventDefault()
+      live = true
+
+      const clamped = Math.max(0, Math.min(dx, outerEl.offsetWidth * 0.8))
+      innerEl.style.transition = 'none'
+      innerEl.style.transform = `translateX(-${clamped}px)`
       setOffset(clamped)
     }
 
     function onTouchEnd() {
-      if (!dragging.current) return
-      dragging.current = false
-      const width = outerRef.current?.offsetWidth ?? window.innerWidth
-      if (currentOffset.current >= width * SWIPE_THRESHOLD) {
-        setTransitioning(true)
-        if (inner) {
-          inner.style.transition = 'transform 0.25s ease'
-          inner.style.transform = `translateX(-${width}px)`
-        }
+      if (!live) return
+      const width = outerEl.offsetWidth
+      const currentDx = parseFloat(innerEl.style.transform.replace('translateX(-', '').replace('px)', '') || '0')
+
+      if (currentDx >= width * SWIPE_THRESHOLD) {
+        innerEl.style.transition = 'transform 0.22s ease'
+        innerEl.style.transform = `translateX(-${width}px)`
         setTimeout(() => {
           setDismissed(true)
-          onContacted()
-        }, 260)
+          onContactedRef.current()
+        }, 230)
       } else {
-        if (inner) {
-          inner.style.transition = 'transform 0.3s ease'
-          inner.style.transform = 'translateX(0)'
-        }
+        innerEl.style.transition = 'transform 0.28s ease'
+        innerEl.style.transform = 'translateX(0)'
         setOffset(0)
       }
+      live = false
     }
 
-    inner.addEventListener('touchstart', onTouchStart, { passive: true })
-    inner.addEventListener('touchmove', onTouchMove, { passive: false })
-    inner.addEventListener('touchend', onTouchEnd, { passive: true })
-
+    innerEl.addEventListener('touchstart', onTouchStart, { passive: true })
+    innerEl.addEventListener('touchmove', onTouchMove, { passive: false })
+    innerEl.addEventListener('touchend', onTouchEnd, { passive: true })
     return () => {
-      inner.removeEventListener('touchstart', onTouchStart)
-      inner.removeEventListener('touchmove', onTouchMove)
-      inner.removeEventListener('touchend', onTouchEnd)
+      innerEl.removeEventListener('touchstart', onTouchStart)
+      innerEl.removeEventListener('touchmove', onTouchMove)
+      innerEl.removeEventListener('touchend', onTouchEnd)
     }
-  }, [canSwipe, onContacted])
+  }, [canSwipe]) // stable — callback handled via ref
 
   if (dismissed) return null
 
@@ -114,7 +117,8 @@ function SwipeableLeadRow({
           alignItems: 'center',
           justifyContent: 'flex-end',
           paddingRight: 24,
-          opacity: canSwipe ? Math.min(offset / 60, 1) : 0,
+          opacity: Math.min(offset / 60, 1),
+          transition: 'opacity 0.1s',
         }}
       >
         <span style={{
@@ -131,10 +135,7 @@ function SwipeableLeadRow({
       {/* Row content — slides left */}
       <div
         ref={innerRef}
-        style={{
-          backgroundColor: 'var(--color-surface)',
-          willChange: 'transform',
-        }}
+        style={{ backgroundColor: 'var(--color-surface)', willChange: 'transform' }}
       >
         {children}
       </div>
