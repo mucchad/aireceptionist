@@ -21,6 +21,7 @@ Vijay is product-minded — hasn't coded in 20+ years. He reads code to follow a
 - **No surprises.** If something will take more than 30 minutes to build, say so upfront.
 - **Confirm before proceeding.** After presenting a plan, explicitly ask "Ready to build?" and wait for a yes before starting.
 - **Report when done.** After completing a task, summarize what was built in plain English and what the next step is.
+- **Commit and push when done.** Always `git add`, `git commit`, and `git push` at the end of every task. Never leave work uncommitted.
 
 ## Tech Stack (decided)
 | Layer | Tool | Notes |
@@ -36,13 +37,40 @@ Vijay is product-minded — hasn't coded in 20+ years. He reads code to follow a
 ## Architecture: Multi-Tenant
 Every account (tenant) has:
 - Their own dedicated Twilio phone number
-- Their own knowledge base (services, hours, pricing, FAQs, service area)
+- Their own knowledge base (services, hours, pricing, FAQs, service area) — stored in `accounts.knowledge_base` as XML-tagged text
 - Their own AI persona settings (name, tone, emergency protocol)
 - Their own notification preferences (SMS + email toggles)
-- Their own dashboard (leads, call logs, bookings)
+- Their own dashboard (leads, call logs, bookings) — accessed via secret `dashboard_token`
 - Their own contacts (owner, manager, staff)
 
-Vijay has a super-admin view across all accounts.
+Vijay has a super-admin view across all accounts at `/accounts`.
+
+## What's Built (as of June 2026)
+
+### Admin (`/accounts`)
+- Accounts list with sidebar nav — **Accounts** (active) and **Deleted** (soft-deleted archive)
+- Soft delete moves account to Deleted page; Restore brings it back
+- Edit account — full form with logo upload, Twilio phone number, knowledge base
+- New account — same form
+- **Generate Knowledge Base** button — scrapes website URL → Claude extracts structured info → populates KB field as XML tags
+
+### AI Receptionist
+- `lib/ai/alex.ts` — `runAlex()` function, uses Claude tool use (`capture_lead` tool) for lead capture
+- System prompt in XML: `<role>`, `<business_context>` (wraps `account.knowledge_base`), `<rules>`
+- Lead data: `name`, `job`, `service_address` (optional — asked once, never repeated)
+- `lib/prompts/` — system prompt templates
+
+### Owner Dashboard (`/dashboard/[token]`)
+- Accessed via secret `dashboard_token` URL — no login required for business owner
+- 4 stat cards: leads today, this week, total conversations, avg response time
+- Leads table with filter tabs (All / New / Contacted / Resolved), inline status update
+- Polls every 15 seconds for new leads
+
+### Twilio
+- `app/api/twilio/voice/route.ts` — incoming call handler, creates conversation
+- `app/api/twilio/voice/respond/route.ts` — speech → Alex → TwiML response, saves lead
+- `app/api/twilio/sms/route.ts` — SMS handler, runs Alex, saves lead
+- Active numbers: Flores Electric REDACTED, Meza's Fence REDACTED
 
 ## Design System
 - Full style spec lives in `docs/style-spec.md` — always follow it exactly
@@ -66,28 +94,73 @@ Vijay has a super-admin view across all accounts.
 - Keep components small and focused — one job each
 - Comment the "why", not the "what"
 
+## ⚠️ Supabase Rules — Read Before Touching Any DB Query
+
+We have hit every one of these bugs in production. They are silent — no errors thrown.
+
+1. **Never use `select('*')`** — always list columns explicitly. `select('*')` silently returns empty after any `ALTER TABLE` due to PostgREST schema cache staleness.
+
+2. **Never use `.order()`** — silently returns 1 row on Vercel. Always sort in JavaScript instead:
+   ```ts
+   .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+   ```
+
+3. **Never use `.is('col', null)` as a filter** — silently returns all rows for columns added via `ALTER TABLE`. Use direct fetch with PostgREST query string instead:
+   ```ts
+   fetch(`${url}/rest/v1/table?col=is.null&select=${COLS}`, { headers: { apikey, Authorization } })
+   ```
+
+4. **Never use `.update({ col: null })` via supabase-js** — null values are silently dropped from the PATCH body. Use direct fetch:
+   ```ts
+   fetch(`${url}/rest/v1/table?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ col: null }) })
+   ```
+
+5. **Always call `router.refresh()` after mutations** — Next.js App Router caches pages client-side for ~30 seconds. Without `router.refresh()`, navigating away and back shows stale data.
+
+6. **Universal rule:** If something works via `curl`/REST but not via supabase-js on Vercel — **bypass supabase-js with a direct `fetch()` call**. PostgREST REST API is the ground truth.
+
+7. **If schema cache is stale:** Run `NOTIFY pgrst, 'reload schema';` in the Supabase SQL Editor to force a cache rebuild.
+
 ## What NOT to Do
-- Don't add features not in the current scope doc
+- Don't add features not in the current scope
 - Don't use `any` in TypeScript
 - Don't write desktop-first CSS
 - Don't make API calls directly from components (use server actions or API routes)
 - Don't store secrets in code — use environment variables
+- Don't use `select('*')`, `.order()`, or `.update({ col: null })` — see Supabase Rules above
 
 ## File Structure
 ```
-/app                    # Next.js pages and API routes
-  /api                  # Backend API endpoints
-  /(admin)              # Vijay's super-admin views
-  /(dashboard)          # Business owner dashboard
-  /(widget)             # Public-facing chat widget
-/components             # Reusable UI components
-  /ui                   # shadcn primitives
-  /dashboard            # Dashboard-specific components
-  /receptionist         # Chat/call UI components
+/app
+  /api
+    /accounts           # CRUD for accounts
+      /[id]/delete      # Soft delete (PATCH) — uses direct fetch
+      /[id]/restore     # Restore from deleted (POST) — uses direct fetch
+      /[id]/logo        # Logo upload
+      /deleted          # GET all soft-deleted accounts
+      /generate-knowledge-base  # POST: scrape website → Claude → KB
+    /dashboard/[token]  # Owner dashboard data
+    /leads              # Lead status updates
+    /twilio/voice       # Incoming call webhook
+    /twilio/voice/respond  # Mid-call speech handler
+    /twilio/sms         # Incoming SMS webhook
+  /(admin)              # Vijay's admin views (route group, no URL prefix)
+    /accounts           # Accounts list (/accounts)
+    /accounts/deleted   # Deleted accounts (/accounts/deleted)
+    /accounts/new       # New account form
+    /accounts/[id]/edit # Edit account form
+  /dashboard/[token]    # Business owner dashboard (/dashboard/[token])
+/components
+  /ui                   # Shared primitives (TopBar, StatCard, Badge, Avatar, etc.)
+  /dashboard            # AccountsTable, LeadsTable
 /lib
-  /db                   # Supabase queries
-  /ai                   # Claude API logic
+  /db
+    accounts.ts         # getAccounts, getDeletedAccounts, getAccount, createAccount
+    leads.ts            # getLeads, updateLeadStatus
+  /ai
+    alex.ts             # runAlex(), buildSystemPrompt(), CAPTURE_LEAD_TOOL
   /twilio               # Twilio helpers
-  /prompts              # AI system prompts
-/types                  # Shared TypeScript types
+  /prompts              # System prompt templates
+/types
+  index.ts              # Account, Lead, Contact, LeadStatus, etc.
 ```
