@@ -136,13 +136,13 @@ function StatusSelector({
     if (!next || saving) return
     setSaving(true)
     try {
+      setStatus(next)
+      onStatusChange?.(leadId, next)
       await fetch('/api/leads', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lead_id: leadId, status: next }),
       })
-      setStatus(next)
-      onStatusChange?.(leadId, next)
     } catch {
       // silently fail — UI stays in sync, will correct on next reload
     } finally {
@@ -299,13 +299,13 @@ export function LeadsTable({ leads, filter, onStatusChange }: LeadsTableProps) {
         <SwipeableLeadRow
           key={lead.id}
           canSwipe={lead.status === 'new'}
-          onContacted={async () => {
-            await fetch('/api/leads', {
+          onContacted={() => {
+            onStatusChange?.(lead.id, 'contacted')
+            fetch('/api/leads', {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ lead_id: lead.id, status: 'contacted' }),
-            })
-            onStatusChange?.(lead.id, 'contacted')
+            }).catch(() => {/* 15s poll will correct if this fails */})
           }}
           className="lead-row-enter"
           style={{
