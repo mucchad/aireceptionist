@@ -52,6 +52,7 @@ export async function PATCH(
       name,
       type,
       persona_name,
+      twilio_phone_number,
       emergency_protocol,
       emergency_contact,
       manual_content,
@@ -71,6 +72,7 @@ export async function PATCH(
         name,
         type,
         persona_name,
+        twilio_phone_number: twilio_phone_number?.trim() || null,
         emergency_protocol,
         emergency_contact: emergency_contact || null,
       })

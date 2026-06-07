@@ -33,6 +33,7 @@ interface FormData {
   name: string
   type: string
   persona_name: string
+  twilio_phone_number: string
   website_url: string
   google_maps_url: string
   facebook_url: string
@@ -113,6 +114,7 @@ export default function EditAccountPage() {
     name: '',
     type: '',
     persona_name: 'Alex',
+    twilio_phone_number: '',
     website_url: '',
     google_maps_url: '',
     facebook_url: '',
@@ -152,6 +154,7 @@ export default function EditAccountPage() {
           name: account.name ?? '',
           type: account.type ?? '',
           persona_name: account.persona_name ?? 'Alex',
+          twilio_phone_number: account.twilio_phone_number ?? '',
           website_url: website?.url ?? '',
           google_maps_url: googleMaps?.url ?? '',
           facebook_url: facebook?.url ?? '',
@@ -417,8 +420,21 @@ export default function EditAccountPage() {
           </div>
         </div>
 
-        {/* ── Right column: Knowledge base ── */}
+        {/* ── Right column: Phone + Knowledge base ── */}
         <div>
+          {/* Twilio phone number */}
+          <div style={{ marginBottom: 28, paddingBottom: 28, borderBottom: '1px solid var(--color-border)' }}>
+            <SectionHeader title="Phone number" subtitle="The Twilio number assigned to this account" />
+            <Field label="Twilio number" hint="Format: +14085551234 — buy the number in Twilio, paste it here">
+              <input
+                style={inputStyle}
+                placeholder="+1 (408) 555-1234"
+                value={form.twilio_phone_number}
+                onChange={(e) => update('twilio_phone_number', e.target.value)}
+              />
+            </Field>
+          </div>
+
           <SectionHeader title="Knowledge base" subtitle="What Alex knows about this business" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <Field label="Website URL" hint="We'll pull services, hours, and FAQs automatically">
