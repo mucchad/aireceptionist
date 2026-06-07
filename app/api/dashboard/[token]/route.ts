@@ -6,8 +6,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { getLeads, getLeadCounts } from '@/lib/db/leads'
-import { getConversationCount } from '@/lib/db/conversations'
+import { getLeads } from '@/lib/db/leads'
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -37,25 +36,45 @@ export async function GET(
       return NextResponse.json({ error: 'Dashboard not found' }, { status: 404 })
     }
 
-    // Fetch leads, counts, and conversation stats in parallel
-    const [leads, counts, conversations] = await Promise.all([
-      getLeads(account.id),
-      getLeadCounts(account.id),
-      getConversationCount(account.id),
-    ])
+    // Fetch leads — derive all counts from this single source of truth
+    const leads = await getLeads(account.id)
 
-    // Derive byStatus from the actual leads array so tabs always match the table
-    const byStatus = {
-      new:       leads.filter((l) => l.status === 'new').length,
-      contacted: leads.filter((l) => l.status === 'contacted').length,
-      resolved:  leads.filter((l) => l.status === 'resolved').length,
+    // Fetch conversation counts with explicit columns to avoid schema cache issues
+    const supabaseClient = getSupabase()
+    const { data: convRows } = await supabaseClient
+      .from('conversations')
+      .select('id, account_id, channel')
+
+    const convs = (convRows ?? []).filter((c) => c.account_id === account.id)
+
+    // Compute all counts from the leads array — never trust a separate query
+    const now = new Date()
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const weekStart = new Date(todayStart)
+    weekStart.setDate(weekStart.getDate() - 7)
+
+    const counts = {
+      total:     leads.length,
+      today:     leads.filter((l) => new Date(l.created_at) >= todayStart).length,
+      thisWeek:  leads.filter((l) => new Date(l.created_at) >= weekStart).length,
+      byStatus: {
+        new:       leads.filter((l) => l.status === 'new').length,
+        contacted: leads.filter((l) => l.status === 'contacted').length,
+        resolved:  leads.filter((l) => l.status === 'resolved').length,
+      },
+    }
+
+    const conversations = {
+      total: convs.length,
+      calls: convs.filter((c) => c.channel === 'call').length,
+      sms:   convs.filter((c) => c.channel === 'sms').length,
     }
 
     return NextResponse.json({
       accountName: account.name,
       logoUrl: account.logo_url ?? null,
       leads,
-      counts: { ...counts, byStatus },
+      counts,
       conversations,
     })
   } catch (error) {
