@@ -36,29 +36,25 @@ function SwipeableLeadRow({
     if (!canSwipe) return
     startX.current = e.touches[0].clientX
     startY.current = e.touches[0].clientY
-    tracking.current = false
     rowWidth.current = (e.currentTarget as HTMLElement).offsetWidth
+    tracking.current = true
   }
 
   function onTouchMove(e: React.TouchEvent) {
-    if (!canSwipe) return
+    if (!canSwipe || !tracking.current) return
     const dx = startX.current - e.touches[0].clientX
-    const dy = Math.abs(e.touches[0].clientY - startY.current)
-    // ignore vertical scroll
-    if (!tracking.current && dy > Math.abs(dx)) return
-    tracking.current = true
-    const clamped = Math.max(0, dx)
-    setOffset(clamped)
+    if (dx <= 0) return
+    setOffset(dx)
     setAnimating(false)
   }
 
   function onTouchEnd() {
     if (!canSwipe || !tracking.current) return
     tracking.current = false
-    const threshold = rowWidth.current * SWIPE_THRESHOLD
+    const threshold = (rowWidth.current || 300) * SWIPE_THRESHOLD
     if (offset >= threshold) {
       setAnimating(true)
-      setOffset(rowWidth.current)
+      setOffset(rowWidth.current || 400)
       setTimeout(() => {
         setDismissed(true)
         onContacted()
@@ -104,7 +100,7 @@ function SwipeableLeadRow({
           transform: `translateX(-${offset}px)`,
           transition: animating ? 'transform 0.25s ease' : 'none',
           backgroundColor: 'var(--color-surface)',
-          touchAction: 'pan-y',
+          touchAction: 'none',
         }}
       >
         {children}
