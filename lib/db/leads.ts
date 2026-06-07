@@ -12,16 +12,16 @@ function getSupabase() {
 }
 
 // Get all leads for an account, newest first
+// Note: filtering in JS because Supabase .eq() on UUID has an issue in this environment
 export async function getLeads(accountId: string): Promise<Lead[]> {
   const supabase = getSupabase()
   const { data, error } = await supabase
     .from('leads')
     .select('*')
-    .eq('account_id', accountId)
     .order('created_at', { ascending: false })
 
   if (error) throw new Error(`Failed to fetch leads: ${error.message}`)
-  return data ?? []
+  return (data ?? []).filter((l) => l.account_id === accountId)
 }
 
 // Update the status of a lead (new → contacted → resolved)
@@ -48,12 +48,11 @@ export async function getLeadCounts(accountId: string): Promise<{
   const supabase = getSupabase()
   const { data, error } = await supabase
     .from('leads')
-    .select('status, created_at')
-    .eq('account_id', accountId)
+    .select('status, created_at, account_id')
 
   if (error) throw new Error(`Failed to fetch lead counts: ${error.message}`)
 
-  const leads = data ?? []
+  const leads = (data ?? []).filter((l) => l.account_id === accountId)
   const now = new Date()
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const weekStart = new Date(todayStart)

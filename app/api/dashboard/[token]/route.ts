@@ -34,24 +34,7 @@ export async function GET(
       return NextResponse.json({ error: 'Dashboard not found' }, { status: 404 })
     }
 
-    // Fetch leads directly inline for debugging
-    const supabase2 = getSupabase()
-    const { data: leadsData, error: leadsError } = await supabase2
-      .from('leads')
-      .select('*')
-      .eq('account_id', account.id)
-      .order('created_at', { ascending: false })
-
-    // Try fetching ALL leads with no filter
-    const { data: allLeads } = await supabase2.from('leads').select('id, account_id, customer_name')
-
-    // Filter allLeads in JS as a workaround to confirm the ID matches
-    const jsFiltered = (allLeads ?? []).filter((l: { account_id: string }) => l.account_id === account.id)
-
-    console.log('DEBUG account.id:', account.id)
-    console.log('DEBUG leadsError:', leadsError)
-    console.log('DEBUG leadsData:', leadsData)
-
+    // Fetch leads and counts for this account
     const [leads, counts] = await Promise.all([
       getLeads(account.id),
       getLeadCounts(account.id),
@@ -61,7 +44,6 @@ export async function GET(
       accountName: account.name,
       leads,
       counts,
-      _debug: { accountId: account.id, directLeads: leadsData, directError: leadsError, allLeads, jsFiltered, supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL },
     })
   } catch (error) {
     console.error('Dashboard load error:', error)
