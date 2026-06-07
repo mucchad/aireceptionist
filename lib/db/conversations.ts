@@ -24,15 +24,14 @@ export async function getOrCreateConversation(
   // For SMS: match by customer phone number (ongoing thread)
   const lookupPhone = channel === 'call' && callSid ? callSid : customerPhone
 
-  const { data: existing } = await supabase
+  const { data: matches } = await supabase
     .from('conversations')
     .select('*')
     .eq('account_id', accountId)
     .eq('customer_phone', lookupPhone)
     .eq('channel', channel)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single()
+
+  const existing = (matches ?? []).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] ?? null
 
   if (existing) return existing
 

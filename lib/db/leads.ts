@@ -18,10 +18,11 @@ export async function getLeads(accountId: string): Promise<Lead[]> {
   const { data, error } = await supabase
     .from('leads')
     .select('*')
-    .order('created_at', { ascending: false })
 
   if (error) throw new Error(`Failed to fetch leads: ${error.message}`)
-  return (data ?? []).filter((l) => l.account_id === accountId)
+  return (data ?? [])
+    .filter((l) => l.account_id === accountId)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 }
 
 // Update the status of a lead (new → contacted → resolved)

@@ -44,8 +44,6 @@ export async function getContacts(accountId: string): Promise<Contact[]> {
     .from('contacts')
     .select('*')
     .eq('account_id', accountId)
-    .order('is_primary', { ascending: false })
-
   if (error) throw new Error(`Failed to fetch contacts: ${error.message}`)
-  return data ?? []
+  return (data ?? []).sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0))
 }
