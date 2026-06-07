@@ -21,14 +21,16 @@ export async function POST(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const callSid  = searchParams.get('callSid') as string
-    const to       = searchParams.get('to')       as string  // business number
+    const to       = searchParams.get('to')       as string
 
-    const formData      = await request.formData()
-    const speechResult  = formData.get('SpeechResult')  as string  // transcribed speech
-    const from          = formData.get('From')           as string  // customer phone
+    const formData     = await request.formData()
+    const speechResult = formData.get('SpeechResult') as string
+    const from         = formData.get('From')          as string
 
-    // If no speech was detected, prompt again
+    console.log(`[voice/respond] callSid=${callSid} to=${to} from=${from} speech="${speechResult}"`)
+
     if (!speechResult) {
+      console.log('[voice/respond] No speech detected — reprompting')
       const twiml = buildVoiceTwiml(
         "Sorry, I didn't catch that. Could you say that again?",
         `${PRODUCTION_URL}/api/twilio/voice/respond?callSid=${callSid}&to=${encodeURIComponent(to)}`
@@ -36,17 +38,17 @@ export async function POST(request: Request) {
       return new NextResponse(twiml, { headers: { 'Content-Type': 'text/xml' } })
     }
 
-    // Look up the account
     const account = await getAccountByPhone(to)
     if (!account) {
+      console.error(`[voice/respond] No account found for number: ${to}`)
       const twiml = buildVoiceTwiml("Sorry, something went wrong. Please call back later.", undefined, true)
       return new NextResponse(twiml, { headers: { 'Content-Type': 'text/xml' } })
     }
+    console.log(`[voice/respond] Account: ${account.name} (${account.id})`)
 
-    // Get the conversation for this call
     const conversation = await getOrCreateConversation(account.id, callSid, 'call', callSid)
+    console.log(`[voice/respond] Conversation: ${conversation.id} lead_id=${conversation.lead_id ?? 'none'} history=${conversation.messages.length} msgs`)
 
-    // Save the customer's spoken message
     const userMessage = {
       role: 'user' as const,
       content: speechResult,
@@ -54,15 +56,15 @@ export async function POST(request: Request) {
     }
     await appendMessage(conversation.id, userMessage)
 
-    // Run through Claude
     const systemPrompt = buildSystemPrompt(account)
+    console.log('[voice/respond] Calling Claude...')
     const { message, leadCaptured, leadData } = await runAlex(
       systemPrompt,
       conversation.messages,
       speechResult
     )
+    console.log(`[voice/respond] Claude response: "${message}" leadCaptured=${leadCaptured} leadData=${JSON.stringify(leadData ?? null)}`)
 
-    // Save Alex's response
     const assistantMessage = {
       role: 'assistant' as const,
       content: message,
@@ -70,11 +72,11 @@ export async function POST(request: Request) {
     }
     await appendMessage(conversation.id, assistantMessage)
 
-    // If lead captured — save to DB and notify owner
     if (leadCaptured && leadData && !conversation.lead_id) {
+      console.log(`[voice/respond] Saving lead for ${leadData.name}...`)
       const supabase = getSupabase()
 
-      const { data: lead } = await supabase
+      const { data: lead, error: leadError } = await supabase
         .from('leads')
         .insert({
           account_id: account.id,
@@ -88,7 +90,10 @@ export async function POST(request: Request) {
         .select()
         .single()
 
-      if (lead) {
+      if (leadError) {
+        console.error('[voice/respond] Failed to insert lead:', leadError)
+      } else {
+        console.log(`[voice/respond] Lead saved: ${lead.id}`)
         await linkConversationToLead(conversation.id, lead.id)
 
         if (account.notify_sms) {
@@ -103,20 +108,19 @@ export async function POST(request: Request) {
           }
         }
       }
+    } else if (leadCaptured && conversation.lead_id) {
+      console.log(`[voice/respond] Lead already exists for this conversation: ${conversation.lead_id} — skipping`)
     }
 
-    // Build the TwiML response
     const respondUrl = `${PRODUCTION_URL}/api/twilio/voice/respond?callSid=${callSid}&to=${encodeURIComponent(to)}`
-
-    // If lead is captured, say goodbye and hang up
-    // Otherwise keep the conversation going
     const twiml = leadCaptured
       ? buildVoiceTwiml(message, undefined, true)
       : buildVoiceTwiml(message, respondUrl)
 
+    console.log(`[voice/respond] Responding — hangup=${leadCaptured}`)
     return new NextResponse(twiml, { headers: { 'Content-Type': 'text/xml' } })
   } catch (error) {
-    console.error('Voice respond error:', error)
+    console.error('[voice/respond] Unhandled error:', error)
     const twiml = buildVoiceTwiml("I'm sorry, I ran into a problem. Please try calling back shortly.", undefined, true)
     return new NextResponse(twiml, { headers: { 'Content-Type': 'text/xml' } })
   }
