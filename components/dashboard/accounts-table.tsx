@@ -29,6 +29,8 @@ export function AccountsTable({ filter }: AccountsTableProps) {
   const [leadCounts, setLeadCounts] = useState<Record<string, number>>({})
   const [convoCounts, setConvoCounts] = useState<Record<string, ConvoCount>>({})
   const [loading, setLoading] = useState(true)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -58,6 +60,17 @@ export function AccountsTable({ filter }: AccountsTableProps) {
     }
     load()
   }, [])
+
+  async function deleteAccount(id: string) {
+    setDeleting(true)
+    try {
+      await fetch(`/api/accounts/${id}/delete`, { method: 'PATCH' })
+      setAccounts((prev) => prev.filter((a) => a.id !== id))
+    } finally {
+      setDeleting(false)
+      setConfirmDeleteId(null)
+    }
+  }
 
   const filtered = accounts.filter((a) => {
     if (filter === 'all') return true
@@ -98,14 +111,14 @@ export function AccountsTable({ filter }: AccountsTableProps) {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(0,1.7fr) 120px 160px 130px 80px 100px 64px',
+          gridTemplateColumns: 'minmax(0,1.7fr) 120px 160px 130px 80px 100px 64px 40px',
           alignItems: 'center',
           height: 42,
           padding: '0 20px',
           borderBottom: '1px solid var(--color-border)',
         }}
       >
-        {['Business', 'Status', 'Phone number', 'Created', 'Leads', 'Conversations', ''].map((col) => (
+        {['Business', 'Status', 'Phone number', 'Created', 'Leads', 'Conversations', '', ''].map((col) => (
           <span
             key={col}
             style={{
@@ -139,6 +152,80 @@ export function AccountsTable({ filter }: AccountsTableProps) {
         </div>
       )}
 
+      {/* Confirm delete dialog */}
+      {confirmDeleteId && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 50,
+          }}
+          onClick={() => setConfirmDeleteId(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-card)',
+              boxShadow: 'var(--shadow-card)',
+              padding: '28px 32px',
+              width: 380,
+              textAlign: 'center',
+            }}
+          >
+            <h3 style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 18, fontWeight: 700, color: 'var(--color-text)', margin: '0 0 8px' }}>
+              Delete this account?
+            </h3>
+            <p style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: 13, color: 'var(--color-text-muted)', margin: '0 0 24px', lineHeight: 1.5 }}>
+              The account will be hidden from the list. All data is kept — you can reactivate it later.
+            </p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                style={{
+                  flex: 1,
+                  height: 38,
+                  borderRadius: 'var(--radius-control)',
+                  backgroundColor: 'transparent',
+                  border: '1px solid var(--color-border)',
+                  fontFamily: "'Hanken Grotesk', sans-serif",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: 'var(--color-text)',
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteAccount(confirmDeleteId)}
+                disabled={deleting}
+                style={{
+                  flex: 1,
+                  height: 38,
+                  borderRadius: 'var(--radius-control)',
+                  backgroundColor: 'var(--color-accent)',
+                  border: 'none',
+                  fontFamily: "'Hanken Grotesk', sans-serif",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: 'var(--color-on-accent)',
+                  cursor: deleting ? 'not-allowed' : 'pointer',
+                  opacity: deleting ? 0.7 : 1,
+                }}
+              >
+                {deleting ? 'Deleting…' : 'Yes, delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Rows */}
       {filtered.map((account, index) => (
         <div
@@ -147,7 +234,7 @@ export function AccountsTable({ filter }: AccountsTableProps) {
           title="Edit account"
           style={{
             display: 'grid',
-            gridTemplateColumns: 'minmax(0,1.7fr) 120px 160px 130px 80px 100px 64px',
+            gridTemplateColumns: 'minmax(0,1.7fr) 120px 160px 130px 80px 100px 64px 40px',
             alignItems: 'center',
             height: 64,
             padding: '0 20px',
@@ -263,7 +350,6 @@ export function AccountsTable({ filter }: AccountsTableProps) {
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <button
               onClick={(e) => {
-                // Stop the row click from going to edit
                 e.stopPropagation()
                 window.open(`/dashboard/${account.dashboard_token}`, '_blank')
               }}
@@ -282,6 +368,42 @@ export function AccountsTable({ filter }: AccountsTableProps) {
               }}
             >
               Leads ↗
+            </button>
+          </div>
+
+          {/* Delete */}
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setConfirmDeleteId(account.id)
+              }}
+              title="Delete account"
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 'var(--radius-control)',
+                backgroundColor: 'transparent',
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-text-muted)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 14,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--color-accent-weak)'
+                e.currentTarget.style.borderColor = 'var(--color-accent)'
+                e.currentTarget.style.color = 'var(--color-accent-text)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+                e.currentTarget.style.borderColor = 'var(--color-border)'
+                e.currentTarget.style.color = 'var(--color-text-muted)'
+              }}
+            >
+              🗑
             </button>
           </div>
         </div>
