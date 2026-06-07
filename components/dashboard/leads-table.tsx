@@ -120,9 +120,11 @@ const STATUS_STYLES: Record<LeadStatus, { color: string; bg: string; label: stri
 function StatusSelector({
   leadId,
   initial,
+  onStatusChange,
 }: {
   leadId: string
   initial: LeadStatus
+  onStatusChange?: (leadId: string, newStatus: LeadStatus) => void
 }) {
   const [status, setStatus] = useState<LeadStatus>(initial)
   const [saving, setSaving] = useState(false)
@@ -140,6 +142,7 @@ function StatusSelector({
         body: JSON.stringify({ lead_id: leadId, status: next }),
       })
       setStatus(next)
+      onStatusChange?.(leadId, next)
     } catch {
       // silently fail — UI stays in sync, will correct on next reload
     } finally {
@@ -236,17 +239,10 @@ function formatWhen(iso: string): string {
 interface LeadsTableProps {
   leads: Lead[]
   filter: 'all' | LeadStatus
+  onStatusChange?: (leadId: string, newStatus: LeadStatus) => void
 }
 
-async function markContacted(leadId: string) {
-  await fetch('/api/leads', {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ lead_id: leadId, status: 'contacted' }),
-  })
-}
-
-export function LeadsTable({ leads, filter }: LeadsTableProps) {
+export function LeadsTable({ leads, filter, onStatusChange }: LeadsTableProps) {
   const filtered = leads.filter((l) => filter === 'all' || l.status === filter)
 
   return (
@@ -303,7 +299,14 @@ export function LeadsTable({ leads, filter }: LeadsTableProps) {
         <SwipeableLeadRow
           key={lead.id}
           canSwipe={lead.status === 'new'}
-          onContacted={() => markContacted(lead.id)}
+          onContacted={async () => {
+            await fetch('/api/leads', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ lead_id: lead.id, status: 'contacted' }),
+            })
+            onStatusChange?.(lead.id, 'contacted')
+          }}
           className="lead-row-enter"
           style={{
             borderBottom:
@@ -387,7 +390,7 @@ export function LeadsTable({ leads, filter }: LeadsTableProps) {
 
           {/* Status selector */}
           <div>
-            <StatusSelector leadId={lead.id} initial={lead.status} />
+            <StatusSelector leadId={lead.id} initial={lead.status} onStatusChange={onStatusChange} />
           </div>
 
           {/* Mobile-only meta row: channel + time + status together */}

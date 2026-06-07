@@ -111,6 +111,21 @@ export default function OwnerDashboardPage() {
     )
   }
 
+  function handleStatusChange(leadId: string, newStatus: LeadStatus) {
+    setData((prev) => {
+      if (!prev) return prev
+      const leads = prev.leads.map((l) =>
+        l.id === leadId ? { ...l, status: newStatus } : l
+      )
+      const byStatus = {
+        new:       leads.filter((l) => l.status === 'new').length,
+        contacted: leads.filter((l) => l.status === 'contacted').length,
+        resolved:  leads.filter((l) => l.status === 'resolved').length,
+      }
+      return { ...prev, leads, counts: { ...prev.counts, byStatus } }
+    })
+  }
+
   const tabCounts: Record<Filter, number> = {
     all:       data.leads.length,
     new:       data.counts.byStatus.new,
@@ -233,7 +248,7 @@ export default function OwnerDashboardPage() {
         </div>
 
         {/* Leads table */}
-        <LeadsTable leads={data.leads} filter={activeFilter} />
+        <LeadsTable leads={data.leads} filter={activeFilter} onStatusChange={handleStatusChange} />
       </div>
     </div>
   )
