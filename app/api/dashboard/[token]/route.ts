@@ -45,6 +45,9 @@ export async function GET(
     // Try fetching ALL leads with no filter
     const { data: allLeads } = await supabase2.from('leads').select('id, account_id, customer_name')
 
+    // Filter allLeads in JS as a workaround to confirm the ID matches
+    const jsFiltered = (allLeads ?? []).filter((l: { account_id: string }) => l.account_id === account.id)
+
     console.log('DEBUG account.id:', account.id)
     console.log('DEBUG leadsError:', leadsError)
     console.log('DEBUG leadsData:', leadsData)
@@ -58,7 +61,7 @@ export async function GET(
       accountName: account.name,
       leads,
       counts,
-      _debug: { accountId: account.id, directLeads: leadsData, directError: leadsError, allLeads, supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL },
+      _debug: { accountId: account.id, directLeads: leadsData, directError: leadsError, allLeads, jsFiltered, supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL },
     })
   } catch (error) {
     console.error('Dashboard load error:', error)
