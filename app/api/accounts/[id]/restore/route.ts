@@ -1,51 +1,54 @@
 // API route: POST /api/accounts/[id]/restore
 // Clears deleted_at to bring a soft-deleted account back to the active list
+//
+// Uses a direct fetch to the Supabase REST API instead of supabase-js because
+// supabase-js may strip null values from PATCH payloads, making { deleted_at: null }
+// a silent no-op. Direct fetch with JSON.stringify guarantees null is sent.
 
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-}
 
 export async function POST(
   _request: Request,
   { params }: { params: { id: string } }
 ) {
+  const url  = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const key  = process.env.SUPABASE_SERVICE_ROLE_KEY!
+  const { id } = params
+
   try {
-    const supabase = getSupabase()
+    // PATCH directly — bypasses supabase-js serialization to guarantee null is sent
+    const patchRes = await fetch(
+      `${url}/rest/v1/accounts?id=eq.${id}`,
+      {
+        method: 'PATCH',
+        headers: {
+          apikey: key,
+          Authorization: `Bearer ${key}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=representation',
+        },
+        body: JSON.stringify({ deleted_at: null }),
+      }
+    )
 
-    const { error } = await supabase
-      .from('accounts')
-      .update({ deleted_at: null })
-      .eq('id', params.id)
+    if (!patchRes.ok) {
+      const text = await patchRes.text()
+      console.error(`[restore] PATCH failed: ${patchRes.status} ${text}`)
+      throw new Error(`DB update failed: ${patchRes.status}`)
+    }
 
-    if (error) throw new Error(error.message)
+    const rows = await patchRes.json() as Array<{ id: string; deleted_at: string | null }>
+    const updated = rows[0]
+    console.log(`[restore] account=${id} deleted_at after update=${updated?.deleted_at ?? 'null'}`)
 
-    // Verify the update actually took — PostgREST silently ignores writes to
-    // columns it doesn't know about when the schema cache is stale
-    const { data: check } = await supabase
-      .from('accounts')
-      .select('id, deleted_at')
-      .eq('id', params.id)
-      .single()
-
-    console.log(`[restore] account=${params.id} deleted_at after update=${check?.deleted_at ?? 'null'}`)
-
-    if (check?.deleted_at) {
-      // Update was a no-op — schema cache is stale. Surface a clear error.
-      return NextResponse.json(
-        { error: 'Schema cache issue: reload PostgREST schema in Supabase dashboard (Settings → API → Reload schema cache)' },
-        { status: 500 }
-      )
+    if (updated?.deleted_at) {
+      console.error(`[restore] Update was a no-op — deleted_at still set`)
+      return NextResponse.json({ error: 'Restore failed — deleted_at did not clear' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Failed to restore account:', error)
+    console.error('[restore] error:', error)
     return NextResponse.json({ error: 'Failed to restore account' }, { status: 500 })
   }
 }
