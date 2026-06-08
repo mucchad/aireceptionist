@@ -425,22 +425,36 @@ export function LeadsTable({ leads, filter, onStatusChange }: LeadsTableProps) {
             </div>
           </div>
 
-          {/* Job description */}
-          <div
-            className="leads-col-job"
-            style={{
-              fontFamily: "'Hanken Grotesk', sans-serif",
-              fontSize: 14,
-              color: 'var(--color-text-secondary)',
-              lineHeight: 1.45,
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              paddingRight: 16,
-            }}
-          >
-            {lead.job_description || '—'}
+          {/* Job description + address */}
+          <div className="leads-col-job" style={{ paddingRight: 16 }}>
+            <div
+              style={{
+                fontFamily: "'Hanken Grotesk', sans-serif",
+                fontSize: 14,
+                color: 'var(--color-text-secondary)',
+                lineHeight: 1.45,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {lead.job_description || '—'}
+            </div>
+            {lead.service_address && (
+              <div
+                style={{
+                  fontFamily: "'Hanken Grotesk', sans-serif",
+                  fontSize: 12,
+                  color: 'var(--color-text-muted)',
+                  marginTop: 2,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                📍 {lead.service_address}
+              </div>
+            )}
           </div>
 
           {/* Channel chip — hidden on mobile, shown in card meta */}
