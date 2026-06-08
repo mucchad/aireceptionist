@@ -57,6 +57,9 @@ export default function OwnerDashboardPage() {
     }
     load()
 
+    // Log this visit once on mount — fire and forget, don't block the UI
+    fetch(`/api/dashboard/${token}/visit`, { method: 'POST' }).catch(() => {})
+
     // Poll for new leads every 15 seconds — keeps the dashboard live
     const interval = setInterval(load, 15000)
     return () => clearInterval(interval)

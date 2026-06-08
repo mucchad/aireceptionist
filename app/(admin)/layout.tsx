@@ -23,7 +23,9 @@ function SidebarLink({
   const isActive =
     href === '/accounts/deleted'
       ? pathname.startsWith('/accounts/deleted')
-      : pathname === href || (pathname.startsWith(href + '/') && !pathname.startsWith('/accounts/deleted'))
+      : href === '/accounts'
+      ? pathname === '/accounts' || (pathname.startsWith('/accounts/') && !pathname.startsWith('/accounts/deleted'))
+      : pathname === href || pathname.startsWith(href + '/')
 
   return (
     <Link
@@ -125,6 +127,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <SidebarLink href="/accounts/deleted" icon="🗑️" label="Deleted" muted />
+
+          {/* Divider */}
+          <div
+            style={{
+              height: 1,
+              backgroundColor: 'var(--color-border)',
+              margin: '12px 14px',
+            }}
+          />
+
+          {/* Section label */}
+          <div
+            style={{
+              fontFamily: "'Hanken Grotesk', sans-serif",
+              fontSize: 10.5,
+              fontWeight: 700,
+              letterSpacing: '0.07em',
+              textTransform: 'uppercase',
+              color: 'var(--color-text-muted)',
+              padding: '0 14px 8px',
+            }}
+          >
+            Insights
+          </div>
+
+          <SidebarLink href="/logging" icon="📋" label="Logging" />
         </aside>
 
         {/* Main content */}
