@@ -3,7 +3,7 @@
 // Responds with a greeting and starts listening
 
 import { NextResponse } from 'next/server'
-import { getAccountByPhone, buildVoiceTwiml, registerStatusCallback } from '@/lib/twilio/client'
+import { getAccountByPhone, buildVoiceTwiml } from '@/lib/twilio/client'
 import { getOrCreateConversation, appendMessage } from '@/lib/db/conversations'
 
 const PRODUCTION_URL = process.env.NEXT_PUBLIC_PRODUCTION_URL
@@ -28,13 +28,7 @@ export async function POST(request: Request) {
     const conversation = await getOrCreateConversation(account.id, callSid, 'call', callSid)
     console.log(`[voice] Conversation created: ${conversation.id}`)
 
-    // Register a status callback so we know when the call ends — even if no lead was captured
-    const statusUrl = `${PRODUCTION_URL}/api/twilio/voice/status?callSid=${callSid}&to=${encodeURIComponent(to)}&from=${encodeURIComponent(from)}`
-    registerStatusCallback(callSid, statusUrl).catch((err) =>
-      console.error('[voice] Failed to register status callback:', err)
-    )
-
-    const greeting = `Hi there! Thanks for calling ${account.name}. I'm ${account.persona_name}, how can I help you today?`
+const greeting = `Hi there! Thanks for calling ${account.name}. I'm ${account.persona_name}, how can I help you today?`
 
     // Save greeting to conversation history so Alex knows it was already said
     await appendMessage(conversation.id, {

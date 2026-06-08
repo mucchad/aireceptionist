@@ -16,12 +16,10 @@ function getSupabase() {
 
 export async function POST(request: Request) {
   try {
-    const { searchParams } = new URL(request.url)
-    const callSid = searchParams.get('callSid') as string
-    const to      = searchParams.get('to')      as string
-    const from    = searchParams.get('from')    as string
-
     const formData   = await request.formData()
+    const callSid    = formData.get('CallSid')    as string
+    const to         = formData.get('To')         as string
+    const from       = formData.get('From')       as string
     const callStatus = formData.get('CallStatus') as string
 
     console.log(`[voice/status] callSid=${callSid} status=${callStatus} from=${from}`)
