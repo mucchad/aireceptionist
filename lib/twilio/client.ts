@@ -52,6 +52,16 @@ export async function getPrimaryContact(accountId: string) {
   return data
 }
 
+// Register a status callback on an active call via the REST API
+// This is how we detect when a call ends without a lead being captured
+export async function registerStatusCallback(callSid: string, statusCallbackUrl: string): Promise<void> {
+  const client = getClient()
+  await client.calls(callSid).update({
+    statusCallback: statusCallbackUrl,
+    statusCallbackMethod: 'POST',
+  })
+}
+
 // Build a TwiML response for voice calls
 // Wraps text in <Say> and optionally listens for a reply with <Gather>
 export function buildVoiceTwiml(
