@@ -93,6 +93,7 @@ function SwipeableLeadRow({
         position: 'absolute', inset: 0, opacity: 0,
         backgroundColor: 'var(--color-live)',
         display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 24,
+        pointerEvents: 'none',
       }}>
         <span style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: 14, fontWeight: 700, color: '#fff' }}>
           ✓ Contacted
