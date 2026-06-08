@@ -33,7 +33,20 @@ export async function GET() {
       if (c.channel === 'sms')  convoCounts[c.account_id].sms++
     }
 
-    return NextResponse.json({ accounts, convoCounts })
+    // Fetch primary owner contact phone for each account
+    const { data: contacts } = await supabase
+      .from('contacts')
+      .select('account_id, phone')
+      .eq('is_primary', true)
+      .eq('role', 'owner')
+
+    // Map account_id → owner phone
+    const ownerPhones: Record<string, string> = {}
+    for (const contact of contacts ?? []) {
+      if (contact.phone) ownerPhones[contact.account_id] = contact.phone
+    }
+
+    return NextResponse.json({ accounts, convoCounts, ownerPhones })
   } catch (error) {
     console.error('Failed to fetch accounts:', error)
     return NextResponse.json({ error: 'Failed to fetch accounts' }, { status: 500 })

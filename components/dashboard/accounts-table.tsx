@@ -28,6 +28,7 @@ export function AccountsTable({ filter }: AccountsTableProps) {
   const [accounts, setAccounts] = useState<Account[]>([])
   const [leadCounts, setLeadCounts] = useState<Record<string, number>>({})
   const [convoCounts, setConvoCounts] = useState<Record<string, ConvoCount>>({})
+  const [ownerPhones, setOwnerPhones] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -39,6 +40,7 @@ export function AccountsTable({ filter }: AccountsTableProps) {
         const json = await res.json()
         setAccounts(json.accounts ?? [])
         setConvoCounts(json.convoCounts ?? {})
+        setOwnerPhones(json.ownerPhones ?? {})
 
         // Fetch lead counts for each account
         const counts: Record<string, number> = {}
@@ -292,15 +294,22 @@ export function AccountsTable({ filter }: AccountsTableProps) {
             <Badge variant={account.status} />
           </div>
 
-          {/* Phone number */}
-          <div
-            style={{
-              fontFamily: "'Hanken Grotesk', sans-serif",
-              fontSize: 13,
-              color: 'var(--color-text-secondary)',
-            }}
-          >
-            {account.twilio_phone_number ?? '—'}
+          {/* Phone numbers — business line + AI (Twilio) line */}
+          <div style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: 13 }}>
+            {ownerPhones[account.id] ? (
+              <div style={{ color: 'var(--color-text-secondary)' }}>
+                <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--color-text-muted)', marginRight: 4 }}>Biz</span>
+                {ownerPhones[account.id].replace(/^\+?1?(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3')}
+              </div>
+            ) : null}
+            {account.twilio_phone_number ? (
+              <div style={{ color: 'var(--color-text-secondary)', marginTop: ownerPhones[account.id] ? 3 : 0 }}>
+                <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--color-text-muted)', marginRight: 4 }}>AI</span>
+                {account.twilio_phone_number.replace(/^\+1(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3')}
+              </div>
+            ) : (
+              !ownerPhones[account.id] && <span style={{ color: 'var(--color-text-muted)' }}>—</span>
+            )}
           </div>
 
           {/* Created date */}
