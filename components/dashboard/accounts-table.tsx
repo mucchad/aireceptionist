@@ -118,14 +118,14 @@ export function AccountsTable({ filter }: AccountsTableProps) {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(0,1.7fr) 120px 160px 130px 80px 100px 64px 40px',
+          gridTemplateColumns: 'minmax(0,1.7fr) 120px 140px 140px 130px 80px 100px 64px 40px',
           alignItems: 'center',
           height: 42,
           padding: '0 20px',
           borderBottom: '1px solid var(--color-border)',
         }}
       >
-        {['Business', 'Status', 'Phone number', 'Created', 'Leads', 'Conversations', '', ''].map((col) => (
+        {['Business', 'Status', 'Business Phone', 'Twilio Number', 'Created', 'Leads', 'Conversations', '', ''].map((col) => (
           <span
             key={col}
             style={{
@@ -241,7 +241,7 @@ export function AccountsTable({ filter }: AccountsTableProps) {
           title="Edit account"
           style={{
             display: 'grid',
-            gridTemplateColumns: 'minmax(0,1.7fr) 120px 160px 130px 80px 100px 64px 40px',
+            gridTemplateColumns: 'minmax(0,1.7fr) 120px 140px 140px 130px 80px 100px 64px 40px',
             alignItems: 'center',
             height: 64,
             padding: '0 20px',
@@ -294,22 +294,18 @@ export function AccountsTable({ filter }: AccountsTableProps) {
             <Badge variant={account.status} />
           </div>
 
-          {/* Phone numbers — business line + AI (Twilio) line */}
-          <div style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: 13 }}>
-            {ownerPhones[account.id] ? (
-              <div style={{ color: 'var(--color-text-secondary)' }}>
-                <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--color-text-muted)', marginRight: 4 }}>Biz</span>
-                {ownerPhones[account.id].replace(/^\+?1?(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3')}
-              </div>
-            ) : null}
-            {account.twilio_phone_number ? (
-              <div style={{ color: 'var(--color-text-secondary)', marginTop: ownerPhones[account.id] ? 3 : 0 }}>
-                <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--color-text-muted)', marginRight: 4 }}>AI</span>
-                {account.twilio_phone_number.replace(/^\+1(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3')}
-              </div>
-            ) : (
-              !ownerPhones[account.id] && <span style={{ color: 'var(--color-text-muted)' }}>—</span>
-            )}
+          {/* Business Phone */}
+          <div style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: 13, color: 'var(--color-text-secondary)' }}>
+            {ownerPhones[account.id]
+              ? ownerPhones[account.id].replace(/^\+?1?(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3')
+              : <span style={{ color: 'var(--color-text-muted)' }}>—</span>}
+          </div>
+
+          {/* Twilio Number */}
+          <div style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: 13, color: 'var(--color-text-secondary)' }}>
+            {account.twilio_phone_number
+              ? account.twilio_phone_number.replace(/^\+1(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3')
+              : <span style={{ color: 'var(--color-text-muted)' }}>—</span>}
           </div>
 
           {/* Created date */}
