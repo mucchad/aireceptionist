@@ -29,27 +29,37 @@ export interface VisitRow {
 }
 
 export async function getVisits(): Promise<VisitRow[]> {
-  // Join visits with accounts to get the account name
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/dashboard_visits?select=id,account_id,visited_at,ip_address,user_agent,accounts(name)&order=visited_at.desc&limit=500`,
-    { headers: headers(), cache: 'no-store' }
-  )
-  if (!res.ok) throw new Error(`Failed to fetch visits: ${res.status}`)
+  // Two separate fetches, joined in JS — avoids PostgREST embed/join syntax
+  const [visitsRes, accountsRes] = await Promise.all([
+    fetch(
+      `${SUPABASE_URL}/rest/v1/dashboard_visits?select=id,account_id,visited_at,ip_address,user_agent&limit=500`,
+      { headers: headers(), cache: 'no-store' }
+    ),
+    fetch(
+      `${SUPABASE_URL}/rest/v1/accounts?select=id,name`,
+      { headers: headers(), cache: 'no-store' }
+    ),
+  ])
 
-  const rows: Array<{
+  if (!visitsRes.ok) throw new Error(`Failed to fetch visits: ${visitsRes.status}`)
+  if (!accountsRes.ok) throw new Error(`Failed to fetch accounts: ${accountsRes.status}`)
+
+  const visits: Array<{
     id: string
     account_id: string
     visited_at: string
     ip_address: string | null
     user_agent: string | null
-    accounts: { name: string } | null
-  }> = await res.json()
+  }> = await visitsRes.json()
 
-  return rows
+  const accounts: Array<{ id: string; name: string }> = await accountsRes.json()
+  const accountMap = new Map(accounts.map((a) => [a.id, a.name]))
+
+  return visits
     .map((r) => ({
       id: r.id,
       account_id: r.account_id,
-      account_name: r.accounts?.name ?? 'Unknown',
+      account_name: accountMap.get(r.account_id) ?? 'Unknown',
       visited_at: r.visited_at,
       ip_address: r.ip_address,
       user_agent: r.user_agent,

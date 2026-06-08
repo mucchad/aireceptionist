@@ -22,7 +22,12 @@ function formatDate(iso: string): string {
 }
 
 export default async function LoggingPage() {
-  const visits = await getVisits()
+  let visits: Awaited<ReturnType<typeof getVisits>> = []
+  try {
+    visits = await getVisits()
+  } catch (err) {
+    console.error('Logging page error:', err)
+  }
 
   return (
     <div style={{ padding: '32px 40px' }}>
