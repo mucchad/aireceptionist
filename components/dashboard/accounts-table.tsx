@@ -9,6 +9,13 @@ import { Avatar } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import type { Account } from '@/types'
 
+// Strip everything except digits, take last 10, format as (NXX) NXX-XXXX
+function formatPhone(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(-10)
+  if (digits.length !== 10) return raw
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+}
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', {
     month: 'short',
@@ -297,14 +304,14 @@ export function AccountsTable({ filter }: AccountsTableProps) {
           {/* Business Phone */}
           <div style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: 13, color: 'var(--color-text-secondary)' }}>
             {ownerPhones[account.id]
-              ? ownerPhones[account.id].replace(/^\+?1?(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3')
+              ? formatPhone(ownerPhones[account.id])
               : <span style={{ color: 'var(--color-text-muted)' }}>—</span>}
           </div>
 
           {/* Twilio Number */}
           <div style={{ fontFamily: "'Hanken Grotesk', sans-serif", fontSize: 13, color: 'var(--color-text-secondary)' }}>
             {account.twilio_phone_number
-              ? account.twilio_phone_number.replace(/^\+1(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3')
+              ? formatPhone(account.twilio_phone_number)
               : <span style={{ color: 'var(--color-text-muted)' }}>—</span>}
           </div>
 
