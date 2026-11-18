@@ -183,3 +183,8 @@ We have hit every one of these bugs in production. They are silent — no errors
 /types
   index.ts              # Account, Lead, Contact, LeadStatus, etc.
 ```
+
+## Security Notes (Nov 2026)
+- Supabase uses the new `sb_publishable_…` / `sb_secret_…` keys (stored in the existing `NEXT_PUBLIC_SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` env vars). Legacy JWT keys are **disabled** — don't re-enable.
+- `.claude/settings.local.json` is gitignored — it records full curl commands incl. keys. Never commit it.
+- Never put real keys, tokens, dashboard tokens or client phone numbers in tracked files. Git auth uses macOS Keychain, not a token in the remote URL.
