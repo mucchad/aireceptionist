@@ -33,3 +33,6 @@ yarn-error.log*
 # Editor
 .vscode/
 .idea/
+
+# Claude Code local settings (contains command history, may include secrets)
+.claude/settings.local.json

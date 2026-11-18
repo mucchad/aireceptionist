@@ -83,7 +83,7 @@ Vijay has a super-admin view across all accounts at `/accounts`.
 - `app/api/twilio/voice/respond/process/route.ts` — Claude call + lead save
 - `app/api/twilio/voice/status/route.ts` — call-end callback, fallback lead capture
 - `app/api/twilio/sms/route.ts` — SMS handler, runs Alex, saves lead
-- Active numbers: Flores Electric REDACTED, Meza's Fence REDACTED
+- Active numbers: see Twilio number column in /accounts
 
 ### Parked Work
 - **Mobile dashboard redesign** — full design package in `designdrop/design_handoff_owner_mobile/`
